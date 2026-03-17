@@ -24,6 +24,6 @@ export default function HomePage() {
       </div>
     );
   }
-  // Fallback (should not reach here because redirect happens)
+  // FallBack part (should not reach here because redirect happens)
   return null;
 }
