@@ -5,9 +5,8 @@ import { uploadBuffer, deleteFromCloudinary, CloudinaryResult } from '@/lib/clou
 import HeroImage, { IMediaItem } from '@/models/HeroImage';
 import { type NewMediaDetail } from '@/types/media';
 
-type Params = { params: { id: string } };
+type Params = { params: Promise<{ id: string }> };
 
-// ── Strict media object shape (all fields required) ───────────────────────────
 interface MediaObject {
   url:          string;
   cloudinaryId: string;
@@ -22,7 +21,6 @@ interface MediaObject {
   thumbnail:    string | null;
 }
 
-// ── Helper: build media object from Cloudinary result ─────────────────────────
 function buildMediaObject(
   result:        CloudinaryResult,
   file:          File,
@@ -33,26 +31,26 @@ function buildMediaObject(
   return {
     url:          result.secure_url,
     cloudinaryId: result.public_id,
-    alt:          detail.alt          ?? '',
-    title:        detail.title        ?? file.name,
-    isMainImage:  detail.isMainImage  ?? false,
-    order:        detail.order        ?? fallbackOrder,
+    alt:          detail.alt         ?? '',
+    title:        detail.title       ?? file.name,
+    isMainImage:  detail.isMainImage ?? false,
+    order:        detail.order       ?? fallbackOrder,
     format:       isVideo ? (file.type.split('/')[1] ?? 'mp4') : 'webp',
     fileSize:     result.bytes,
     mediaType:    isVideo ? 'video' : 'image',
-    duration:     result.duration     ?? null,
-    thumbnail:    isVideo
-      ? result.secure_url.replace(/\.[^/.]+$/, '.jpg')
-      : null,
+    duration:     result.duration    ?? null,
+    thumbnail:    isVideo ? result.secure_url.replace(/\.[^/.]+$/, '.jpg') : null,
   };
 }
 
 // ── PUT /api/hero-images/:id ──────────────────────────────────────────────────
 export async function PUT(req: NextRequest, { params }: Params) {
   try {
+    const { id } = await params; // ✅ await params
+
     await connectDB();
 
-    const heroImage = await HeroImage.findById(params.id);
+    const heroImage = await HeroImage.findById(id);
     if (!heroImage) {
       return NextResponse.json({ error: 'Not found' }, { status: 404 });
     }
@@ -62,15 +60,14 @@ export async function PUT(req: NextRequest, { params }: Params) {
     const details   = JSON.parse(rawDetail ?? '[]') as (IMediaItem & { markedForDeletion?: boolean })[];
     const files     = formData.getAll('images') as File[];
 
-    const toKeep:   MediaObject[] = [];
-    const toDelete: IMediaItem[]  = [];
+    const toKeep:  MediaObject[]             = [];
+    const toDelete: IMediaItem[]             = [];
     const newMeta:  Partial<NewMediaDetail>[] = [];
 
     details.forEach((d) => {
       if (d._id && !d.markedForDeletion) {
         const orig = heroImage.images.id(d._id);
         if (orig) {
-          // Spread orig values, override with incoming — guarantee no undefined
           toKeep.push({
             url:          orig.url,
             cloudinaryId: orig.cloudinaryId ?? '',
@@ -93,7 +90,6 @@ export async function PUT(req: NextRequest, { params }: Params) {
       }
     });
 
-    // Delete from Cloudinary + remove from doc
     await Promise.allSettled(
       toDelete.map(async (media) => {
         if (media.cloudinaryId) {
@@ -106,7 +102,6 @@ export async function PUT(req: NextRequest, { params }: Params) {
       })
     );
 
-    // Upload new files
     const newObjects: MediaObject[] = await Promise.all(
       files.map(async (file, i) => {
         const buffer = Buffer.from(await file.arrayBuffer());
@@ -115,14 +110,13 @@ export async function PUT(req: NextRequest, { params }: Params) {
       })
     );
 
-    // ✅ Use set() instead of direct assignment to avoid DocumentArray type error
     heroImage.set('images', [...toKeep, ...newObjects]);
     await heroImage.save();
 
     return NextResponse.json({ message: 'Updated successfully', heroImage });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Server error';
-    console.error(`[PUT /api/hero-images/${params.id}]`, err);
+    console.error('[PUT /api/hero-images/[id]]', err);
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
@@ -130,9 +124,11 @@ export async function PUT(req: NextRequest, { params }: Params) {
 // ── DELETE /api/hero-images/:id ───────────────────────────────────────────────
 export async function DELETE(_req: NextRequest, { params }: Params) {
   try {
+    const { id } = await params; // ✅ await params
+
     await connectDB();
 
-    const heroImage = await HeroImage.findById(params.id);
+    const heroImage = await HeroImage.findById(id);
     if (!heroImage) {
       return NextResponse.json({ error: 'Not found' }, { status: 404 });
     }
@@ -148,12 +144,12 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
       )
     );
 
-    await HeroImage.findByIdAndDelete(params.id);
+    await HeroImage.findByIdAndDelete(id);
 
     return NextResponse.json({ message: 'Deleted successfully' });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Server error';
-    console.error(`[DELETE /api/hero-images/${params.id}]`, err);
+    console.error('[DELETE /api/hero-images/[id]]', err);
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
