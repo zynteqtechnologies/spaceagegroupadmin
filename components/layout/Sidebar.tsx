@@ -10,18 +10,18 @@ import {
 type NavItem = {
   label: string;
   icon: React.ReactNode;
-  href:  string;
+  href: string;
   badge?: string | number;
   children?: NavItem[];
 };
 
 const mainNav: NavItem[] = [
-  { label: 'Dashboard',  icon: <LayoutDashboard size={18} />, href: '/dashboard' },
-  { label: 'Hero Image', icon: <ImageIcon size={18} />,       href: '/hero-image' },
-  { label: 'Projects',   icon: <FolderKanban size={18} />,    href: '/projects',  children: [] },
-  { label: 'Blogs',      icon: <FileText size={18} />,        href: '/blogs',     badge: 3 },
-  { label: 'Our Team',   icon: <Users size={18} />,           href: '/our-team' },
-  { label: 'Users',      icon: <User2 size={18} />,           href: '/users' },
+  { label: 'Dashboard', icon: <LayoutDashboard size={18} />, href: '/dashboard' },
+  { label: 'Hero Image', icon: <ImageIcon size={18} />, href: '/hero-image' },
+  { label: 'Projects', icon: <FolderKanban size={18} />, href: '/projects', children: [] },
+  { label: 'Blogs', icon: <FileText size={18} />, href: '/blogs', badge: 3 },
+  { label: 'Our Team', icon: <Users size={18} />, href: '/our-team' },
+  { label: 'Users', icon: <User2 size={18} />, href: '/users' },
 ];
 
 interface SidebarProps {
@@ -51,7 +51,7 @@ export default function Sidebar({ collapsed }: SidebarProps) {
         {collapsed ? (
           <div className="w-8 h-8 relative shrink-0">
             <Image
-              src="/spaceage-logo.png"
+              src="/spaceage-logo-half.png"
               alt="Space Age Group"
               fill
               className="object-contain"
