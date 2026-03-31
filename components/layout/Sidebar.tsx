@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard, ImageIcon, FolderKanban,
-  FileText, Users, ChevronRight, User2
+  FileText, Users, ChevronRight, User2, Aperture
 } from 'lucide-react';
 
 type NavItem = {
@@ -19,7 +19,8 @@ const mainNav: NavItem[] = [
   { label: 'Dashboard', icon: <LayoutDashboard size={18} />, href: '/dashboard' },
   { label: 'Hero Image', icon: <ImageIcon size={18} />, href: '/hero-image' },
   { label: 'Projects', icon: <FolderKanban size={18} />, href: '/projects', children: [] },
-  { label: 'Blogs', icon: <FileText size={18} />, href: '/blogs', badge: 3 },
+  { label: 'Media', icon: <Aperture size={18} />, href: '/media' },
+  { label: 'Blog', icon: <FileText size={18} />, href: '/blog' },
   { label: 'Our Team', icon: <Users size={18} />, href: '/our-team' },
   { label: 'Users', icon: <User2 size={18} />, href: '/users' },
 ];
@@ -41,8 +42,10 @@ export default function Sidebar({ collapsed }: SidebarProps) {
 
   return (
     <aside
-      className={`h-screen bg-[#0f1623] flex flex-col transition-all duration-300 shrink-0 overflow-hidden
-        ${collapsed ? 'w-16' : 'w-64'}`}
+      className={`h-screen bg-[#0f1623] flex flex-col transition-all duration-300 shrink-0 overflow-hidden z-50
+        ${collapsed ? 'w-0 lg:w-16' : 'w-64'}
+        ${collapsed ? '-translate-x-full lg:translate-x-0' : 'translate-x-0'}
+        fixed lg:relative lg:flex`}
     >
       {/* ── Logo ─────────────────────────────────────────────────────────── */}
       <div className={`flex items-center border-b border-white/10 transition-all duration-300
@@ -87,16 +90,16 @@ export default function Sidebar({ collapsed }: SidebarProps) {
               title={collapsed ? item.label : undefined}
               className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm transition-all duration-150
                 ${active
-                  ? 'bg-white/10 text-white font-semibold'
+                  ? 'bg-white/5 text-blue-500 font-semibold'
                   : 'text-slate-400 hover:bg-white/5 hover:text-white'
                 }`}
             >
               {/* Active indicator bar */}
-              <span className={`absolute left-0 w-1 h-7 rounded-r-full bg-indigo-400 transition-all duration-200
+              <span className={`absolute left-0 w-1 h-7 rounded-r-full bg-blue-500 transition-all duration-200
                 ${active ? 'opacity-100' : 'opacity-0'}`}
               />
 
-              <span className={`shrink-0 transition-colors ${active ? 'text-indigo-400' : ''}`}>
+              <span className={`shrink-0 transition-colors ${active ? 'text-blue-500' : ''}`}>
                 {item.icon}
               </span>
 

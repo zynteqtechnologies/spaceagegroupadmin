@@ -17,7 +17,6 @@ const geistMono = Geist_Mono({
 const poppins = Poppins({
   subsets: ["latin"],           // or ["latin", "devanagari"] if needed
   weight: ["400", "500", "600", "700"], // include the weights you use
-  variable: "--font-poppins",   // custom CSS variable name
 });
 
 
@@ -33,7 +32,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${poppins.variable} antialiased`}>
+      <body className={`${poppins.className} antialiased`}>
         <Providers>  {/* Wrap children with providers */}
           {children}
         </Providers>

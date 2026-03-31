@@ -1,6 +1,6 @@
 // types/project.ts
 
-export type MediaType = 'image' | 'video';
+export type MediaType = 'image' | 'video' | 'document';
 export type ProjectStatus = 'upcoming' | 'ongoing' | 'completed';
 export type VirtualTourType = 'matterport' | 'youtube' | 'custom' | 'other';
 
@@ -19,6 +19,10 @@ export interface MediaItem {
     mediaType?: MediaType;
     duration?: number | null;
     thumbnail?: string | null;
+    description?: string;
+    category?: 'image' | 'video' | 'brochure' | 'flyer' | 'other';
+    isInProjects?: boolean;
+    provider?: 'cloudinary' | 'youtube' | 'vimeo' | 'none';
     markedForDeletion?: boolean;
 }
 

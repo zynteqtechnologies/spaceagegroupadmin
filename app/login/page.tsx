@@ -90,19 +90,13 @@ export default function LoginPage() {
             </div>
 
             {/* Action buttons */}
-            <div className="flex flex-col sm:flex-row gap-3">
+            <div className="mt-6">
               <button
                 type="submit"
-                className="flex-1 bg-gradient-to-br from-[#0c74a8] to-[#60c2d1] text-white py-3 px-4 rounded-lg hover:from-[#0a5f8c] hover:to-[#4fa8b8] focus:ring-4 focus:ring-[#0c74a8]/50 transition font-medium"
+                className="w-full bg-gradient-to-br from-[#0c74a8] to-[#60c2d1] text-white py-3 px-4 rounded-lg hover:from-[#0a5f8c] hover:to-[#4fa8b8] focus:ring-4 focus:ring-[#0c74a8] transition font-medium"
               >
-                Login
+                Login to Dashboard
               </button>
-              <Link
-                href="/register"
-                className="flex-1 bg-white text-[#0c74a8] py-3 px-4 rounded-lg border border-[#0c74a8] hover:bg-[#e6f0f7] focus:ring-4 focus:ring-[#0c74a8]/50 transition text-center font-medium"
-              >
-                Create account
-              </Link>
             </div>
 
             {/* Forgot password link */}

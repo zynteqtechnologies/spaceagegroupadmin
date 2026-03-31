@@ -22,38 +22,41 @@ export interface CloudinaryResult {
 // ── Upload buffer to Cloudinary ───────────────────────────────────────────────
 export async function uploadBuffer(
   buffer: Buffer,
-  mimetype: string
+  mimetype: string,
+  folder: string = FOLDER
 ): Promise<CloudinaryResult> {
   const isImage = mimetype.startsWith('image/');
   const isVideo = mimetype.startsWith('video/');
+  const isPDF = mimetype === 'application/pdf';
 
-  if (!isImage && !isVideo) throw new Error('Unsupported file type');
+  if (!isImage && !isVideo && !isPDF) throw new Error(`Unsupported file type: ${mimetype}`);
 
-  if (isImage) {
+  if (isImage && !isPDF) {
     const sharp = (await import('sharp')).default;
     const webpBuffer = await sharp(buffer).webp({ quality: 80 }).toBuffer();
 
     return new Promise((resolve, reject) => {
       cloudinary.uploader
         .upload_stream(
-          { resource_type: 'image', folder: FOLDER, format: 'webp' },
+          { resource_type: 'image', folder: folder, format: 'webp' },
           (err, result) => {
             if (err || !result) return reject(err ?? new Error('Upload failed'));
-            resolve(result as CloudinaryResult);
+            resolve(result as any);
           }
         )
         .end(webpBuffer);
     });
   }
 
-  // Video
+  // Video or PDF (treat PDF as image but don't sharp it)
+  const resource_type = isVideo ? 'video' : 'image';
   return new Promise((resolve, reject) => {
     cloudinary.uploader
       .upload_stream(
-        { resource_type: 'video', folder: FOLDER, chunk_size: 6_000_000 },
+        { resource_type, folder: folder, chunk_size: 6_000_000 },
         (err, result) => {
           if (err || !result) return reject(err ?? new Error('Upload failed'));
-          resolve(result as CloudinaryResult);
+          resolve(result as any);
         }
       )
       .end(buffer);

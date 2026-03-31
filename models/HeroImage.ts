@@ -11,9 +11,13 @@ export interface IMediaItem {
   order?: number;
   format?: string;
   fileSize?: number;
-  mediaType?: 'image' | 'video';
+  mediaType?: 'image' | 'video' | 'document';
   duration?: number | null;
   thumbnail?: string | null;
+  description?: string;
+  category?: 'image' | 'video' | 'brochure' | 'flyer' | 'other';
+  isInProjects?: boolean;
+  provider?: 'cloudinary' | 'youtube' | 'vimeo' | 'none';
 }
 
 export interface IHeroImage extends Document {
@@ -30,9 +34,13 @@ const MediaItemSchema = new Schema<IMediaItem>({
   order:        { type: Number, default: 0 },
   format:       { type: String, default: 'webp' },
   fileSize:     { type: Number },
-  mediaType:    { type: String, enum: ['image', 'video'], default: 'image' },
+  mediaType:    { type: String, enum: ['image', 'video', 'document'], default: 'image' },
   duration:     { type: Number, default: null },
   thumbnail:    { type: String, default: null },
+  description:  { type: String, default: '' },
+  category:     { type: String, enum: ['image', 'video', 'brochure', 'flyer', 'other'], default: 'other' },
+  isInProjects: { type: Boolean, default: false },
+  provider:     { type: String, enum: ['cloudinary', 'youtube', 'vimeo', 'none'], default: 'cloudinary' },
 });
 
 const HeroImageSchema = new Schema<IHeroImage>(
@@ -40,8 +48,10 @@ const HeroImageSchema = new Schema<IHeroImage>(
   { timestamps: true }
 );
 
-const HeroImage: Model<IHeroImage> =
-  mongoose.models.HeroImage ||
-  mongoose.model<IHeroImage>('HeroImage', HeroImageSchema);
+if (mongoose.models.HeroImage) {
+  delete (mongoose.models as any).HeroImage;
+}
+
+const HeroImage: Model<IHeroImage> = mongoose.model<IHeroImage>('HeroImage', HeroImageSchema);
 
 export default HeroImage;

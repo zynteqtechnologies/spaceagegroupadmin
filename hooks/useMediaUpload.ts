@@ -1,6 +1,6 @@
 // hooks/useMediaUpload.ts
 'use client';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { uploadHeroMedia, updateHeroMedia } from '@/lib/mediaApi';
 import type { HeroImageDoc, PreviewFile, MediaItem, NewMediaDetail } from '@/types/media';
 
@@ -10,10 +10,20 @@ interface UseMediaUploadOptions {
 }
 
 export function useMediaUpload({ existingDoc, onSuccess }: UseMediaUploadOptions) {
-  const [previews, setPreviews]   = useState<PreviewFile[]>([]);
+  const [previews, setPreviews] = useState<PreviewFile[]>([]);
   const [uploading, setUploading] = useState(false);
-  const [error, setError]         = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [deletions, setDeletions] = useState<Set<string>>(new Set());
+  const [existingMainImageId, setExistingMainImageId] = useState<string | null>(null);
+
+  useEffect(() => {
+    setExistingMainImageId(existingDoc?.images.find(i => i.isMainImage)?._id ?? null);
+  }, [existingDoc]);
+
+  const setExistingAsMain = useCallback((id: string) => {
+    setExistingMainImageId(id);
+    setPreviews(prev => prev.map(p => ({ ...p, isMainImage: false })));
+  }, []);
 
   // ── Add files ──────────────────────────────────────────────────────────────
   const addFiles = useCallback((fileList: FileList | File[]) => {
@@ -32,12 +42,18 @@ export function useMediaUpload({ existingDoc, onSuccess }: UseMediaUploadOptions
     });
   }, []);
 
-  // ── Update preview metadata ────────────────────────────────────────────────
   const updatePreview = useCallback(
     (index: number, patch: Partial<PreviewFile>) => {
       setPreviews((prev) =>
-        prev.map((p, i) => (i === index ? { ...p, ...patch } : p))
+        prev.map((p, i) => {
+          if (i === index) return { ...p, ...patch };
+          if (patch.isMainImage) return { ...p, isMainImage: false };
+          return p;
+        })
       );
+      if (patch.isMainImage) {
+        setExistingMainImageId(null);
+      }
     },
     []
   );
@@ -79,8 +95,10 @@ export function useMediaUpload({ existingDoc, onSuccess }: UseMediaUploadOptions
 
       if (existingDoc) {
         // ── UPDATE mode ──────────────────────────────────────────────────────
+        const isNewMainSelected = newDetails.some(d => d.isMainImage);
         const existingDetails: MediaItem[] = existingDoc.images.map((img) => ({
           ...img,
+          isMainImage: isNewMainSelected ? false : (existingMainImageId ? img._id === existingMainImageId : false),
           markedForDeletion: img._id ? deletions.has(img._id) : false,
         }));
 
@@ -115,8 +133,8 @@ export function useMediaUpload({ existingDoc, onSuccess }: UseMediaUploadOptions
   }, [previews, existingDoc, deletions, onSuccess]);
 
   return {
-    previews, uploading, error, deletions,
-    addFiles, updatePreview, removePreview,
+    previews, uploading, error, deletions, existingMainImageId,
+    addFiles, updatePreview, removePreview, setExistingAsMain,
     markForDeletion, unmarkForDeletion, submit,
   };
 }

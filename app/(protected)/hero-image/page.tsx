@@ -8,9 +8,9 @@ import type { HeroImageDoc } from '@/types/media';
 import { CloudUpload, LayoutGrid, Loader2, ImageIcon, Film, ChevronRight } from 'lucide-react';
 
 export default function HeroImagePage() {
-  const [doc, setDoc]       = useState<HeroImageDoc | null>(null);
+  const [doc, setDoc] = useState<HeroImageDoc | null>(null);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab]       = useState<'upload' | 'gallery'>('upload');
+  const [tab, setTab] = useState<'upload' | 'gallery'>('upload');
 
   useEffect(() => {
     getHeroMedia()
@@ -35,7 +35,7 @@ export default function HeroImagePage() {
   return (
     <div>
       {/* ── Page header — white, clean ──────────────────────────────────── */}
-      <div className="bg-white border-b border-slate-100 px-8 py-5">
+      <div className="bg-white border-b border-slate-100 px-4 lg:px-8 py-5">
         {/* Breadcrumb */}
         <div className="flex items-center gap-1.5 mb-3 text-xs text-slate-400 font-medium">
           <span className="hover:text-slate-600 cursor-pointer transition-colors">Dashboard</span>
@@ -52,13 +52,13 @@ export default function HeroImagePage() {
 
           {/* Stats */}
           <div className="hidden sm:flex items-center gap-2">
-            <div className="flex items-center gap-2 bg-indigo-50 border border-indigo-100 rounded-xl px-3.5 py-2">
-              <ImageIcon size={14} className="text-indigo-500" />
-              <span className="text-xs font-bold text-indigo-700">{imageCount} Images</span>
+            <div className="flex items-center gap-2 bg-[#f9fbfd] rounded-sm border-1 border-gray-200 shadow-sm px-3.5 py-2">
+              <ImageIcon size={14} className="text-black" />
+              <span className="text-xs font-bold text-black">{imageCount} Images</span>
             </div>
-            <div className="flex items-center gap-2 bg-violet-50 border border-violet-100 rounded-xl px-3.5 py-2">
-              <Film size={14} className="text-violet-500" />
-              <span className="text-xs font-bold text-violet-700">{videoCount} Videos</span>
+            <div className="flex items-center gap-2 bg-[#f9fbfd] rounded-sm border-1 border-gray-200 shadow-sm px-3.5 py-2">
+              <Film size={14} className="text-black" />
+              <span className="text-xs font-bold text-black">{videoCount} Videos</span>
             </div>
           </div>
         </div>
@@ -66,22 +66,22 @@ export default function HeroImagePage() {
         {/* Tabs */}
         <div className="flex items-center gap-1 mt-5">
           {[
-            { key: 'upload'  as const, label: 'Upload',  icon: <CloudUpload size={14} /> },
+            { key: 'upload' as const, label: 'Upload', icon: <CloudUpload size={14} /> },
             { key: 'gallery' as const, label: 'Gallery', icon: <LayoutGrid size={14} />, count: totalCount },
           ].map((t) => (
             <button
               key={t.key}
               onClick={() => setTab(t.key)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all
+              className={`flex items-center gap-2 px-4 py-2 text-sm font-semibold transition-all
                 ${tab === t.key
-                  ? 'bg-slate-900 text-white shadow-sm'
-                  : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'
+                  ? 'bg-slate-900 text-white shadow-sm rounded-sm'
+                  : 'text-slate-500 hover:text-slate-800 bg-[#f9fbfd] rounded-sm border-1 border-gray-200 hover:bg-slate-50'
                 }`}
             >
               {t.icon}
               {t.label}
               {t.count !== undefined && t.count > 0 && (
-                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center
+                <span className={`text-[12px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center
                   ${tab === t.key ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'}`}>
                   {t.count}
                 </span>
@@ -92,7 +92,7 @@ export default function HeroImagePage() {
       </div>
 
       {/* ── Content ────────────────────────────────────────────────────── */}
-      <div className="px-8 py-6">
+      <div className="px-4 lg:px-8 py-6 bg-[#f9fbfd]">
 
         {tab === 'upload' && (
           <MediaUploader
@@ -102,13 +102,13 @@ export default function HeroImagePage() {
         )}
 
         {tab === 'gallery' && doc && doc.images.length > 0 && (
-          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
+          <div className="bg-white border border-slate-100 shadow-sm p-6">
             <MediaGallery doc={doc} onUpdate={setDoc} />
           </div>
         )}
 
         {tab === 'gallery' && (!doc || doc.images.length === 0) && (
-          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm flex flex-col items-center justify-center py-24 gap-5">
+          <div className="bg-white border border-slate-100 shadow-sm flex flex-col items-center justify-center py-24 gap-5">
             <div className="relative">
               <div className="w-20 h-20 rounded-3xl bg-slate-50 border-2 border-dashed border-slate-200 flex items-center justify-center">
                 <LayoutGrid size={28} className="text-slate-300" />

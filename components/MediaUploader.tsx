@@ -22,6 +22,7 @@ export default function MediaUploader({ existingDoc, onSuccess }: MediaUploaderP
     deletions, addFiles, updatePreview,
     removePreview, markForDeletion,
     unmarkForDeletion, submit,
+    existingMainImageId, setExistingAsMain,
   } = useMediaUpload({ existingDoc, onSuccess });
 
   const onDrop = (e: DragEvent<HTMLDivElement>) => {
@@ -41,18 +42,18 @@ export default function MediaUploader({ existingDoc, onSuccess }: MediaUploaderP
         onDragLeave={() => setDragging(false)}
         onDrop={onDrop}
         onClick={() => inputRef.current?.click()}
-        className={`relative cursor-pointer rounded-2xl border-2 border-dashed transition-all duration-200
+        className={`relative cursor-pointer rounded-sm border-2 border-dashed transition-all duration-200
           ${dragging
             ? 'border-indigo-400 bg-indigo-50/60 scale-[1.01]'
             : 'border-slate-200 bg-white hover:border-indigo-300 hover:bg-indigo-50/20'
           }`}
       >
         {/* Dot pattern */}
-        <div className="absolute inset-0 rounded-2xl overflow-hidden opacity-50 pointer-events-none"
+        <div className="absolute inset-0 rounded-sm overflow-hidden opacity-50 pointer-events-none"
           style={{ backgroundImage: 'radial-gradient(circle, #c7d2fe 1px, transparent 1px)', backgroundSize: '22px 22px' }} />
 
         <div className="relative flex flex-col items-center justify-center py-14 px-6 gap-3">
-          <div className={`w-16 h-16 rounded-2xl flex items-center justify-center transition-all duration-200
+          <div className={`w-16 h-16 rounded-sm flex items-center justify-center transition-all duration-200
             ${dragging
               ? 'bg-indigo-500 shadow-xl shadow-indigo-300 scale-110'
               : 'bg-slate-50 border border-slate-200'
@@ -121,8 +122,9 @@ export default function MediaUploader({ existingDoc, onSuccess }: MediaUploaderP
               return (
                 <div
                   key={media._id}
-                  className={`group relative rounded-xl overflow-hidden aspect-[4/3] cursor-pointer transition-all duration-200
-                    ${isDeleted ? 'opacity-40 scale-95 ring-2 ring-rose-400' : 'hover:shadow-md'}`}
+                  className={`group relative rounded-xl overflow-hidden aspect-[4/3] cursor-pointer transition-all duration-200 border-2
+                    ${isDeleted ? 'opacity-40 scale-95 border-rose-400' : 'hover:shadow-md border-transparent'}
+                    ${existingMainImageId === media._id && !isDeleted ? 'ring-2 ring-amber-400 ring-offset-2 border-amber-400' : ''}`}
                 >
                   {media.mediaType === 'video' ? (
                     <div className="w-full h-full bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center">
@@ -135,10 +137,20 @@ export default function MediaUploader({ existingDoc, onSuccess }: MediaUploaderP
 
                   <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all" />
 
-                  {media.isMainImage && (
-                    <span className="absolute top-1.5 left-1.5 bg-amber-400 text-white text-[9px] font-bold px-1.5 py-0.5 rounded flex items-center gap-0.5">
+                  {existingMainImageId === media._id && (
+                    <span className="absolute top-1.5 left-1.5 bg-amber-400 text-white text-[9px] font-bold px-1.5 py-0.5 rounded flex items-center gap-0.5 z-10">
                       <Star size={7} fill="white" /> Main
                     </span>
+                  )}
+                  {!isDeleted && existingMainImageId !== media._id && media.mediaType === 'image' && (
+                    <button
+                      type="button"
+                      title="Set as Main Image"
+                      onClick={(e) => { e.stopPropagation(); setExistingAsMain(media._id!); }}
+                      className={`absolute top-1.5 left-1.5 w-6 h-6 rounded-md flex items-center justify-center transition-all bg-white/90 text-slate-400 opacity-0 group-hover:opacity-100 hover:bg-amber-100 hover:text-amber-500 z-10`}
+                    >
+                      <Star size={10} />
+                    </button>
                   )}
 
                   <button
@@ -273,8 +285,8 @@ export default function MediaUploader({ existingDoc, onSuccess }: MediaUploaderP
           {previews.length > 0
             ? <><span className="font-semibold text-indigo-500">{previews.length} file{previews.length > 1 ? 's' : ''}</span> ready to upload</>
             : deletions.size > 0
-            ? <><span className="font-semibold text-rose-500">{deletions.size} item{deletions.size > 1 ? 's' : ''}</span> marked for deletion</>
-            : 'Select files above to get started'
+              ? <><span className="font-semibold text-rose-500">{deletions.size} item{deletions.size > 1 ? 's' : ''}</span> marked for deletion</>
+              : 'Select files above to get started'
           }
         </p>
         <button
@@ -286,8 +298,8 @@ export default function MediaUploader({ existingDoc, onSuccess }: MediaUploaderP
           {uploading
             ? <><Loader2 size={15} className="animate-spin" /> Uploading…</>
             : existingDoc
-            ? <><ArrowUpCircle size={15} /> Save Changes</>
-            : <><CloudUpload size={15} /> {previews.length > 0 ? `Upload ${previews.length} File${previews.length > 1 ? 's' : ''}` : 'Upload Files'}</>
+              ? <><ArrowUpCircle size={15} /> Save Changes</>
+              : <><CloudUpload size={15} /> {previews.length > 0 ? `Upload ${previews.length} File${previews.length > 1 ? 's' : ''}` : 'Upload Files'}</>
           }
         </button>
       </div>

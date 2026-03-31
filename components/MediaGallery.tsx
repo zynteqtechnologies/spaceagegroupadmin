@@ -1,7 +1,7 @@
 // components/MediaGallery.tsx
 'use client';
 import { useState } from 'react';
-import { Trash2, Star, Video, X, ChevronLeft, ChevronRight, Maximize2, LayoutGrid } from 'lucide-react';
+import { Trash2, Star, Video, X, ChevronLeft, ChevronRight, Maximize2, LayoutGrid, FileText } from 'lucide-react';
 import { deleteMediaItem } from '@/lib/mediaApi';
 import type { HeroImageDoc, MediaItem } from '@/types/media';
 
@@ -12,12 +12,12 @@ interface MediaGalleryProps {
 
 export default function MediaGallery({ doc, onUpdate }: MediaGalleryProps) {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
-  const [deleting, setDeleting]           = useState<string | null>(null);
-  const [filter, setFilter]               = useState<'all' | 'image' | 'video'>('all');
+  const [deleting, setDeleting] = useState<string | null>(null);
+  const [filter, setFilter] = useState<'all' | 'image' | 'video'>('all');
 
   const allImages = doc.images ?? [];
-  const filtered  = filter === 'all' ? allImages : allImages.filter(m => m.mediaType === filter);
-  const current   = lightboxIndex !== null ? filtered[lightboxIndex] : null;
+  const filtered = filter === 'all' ? allImages : allImages.filter(m => m.mediaType === filter);
+  const current = lightboxIndex !== null ? filtered[lightboxIndex] : null;
 
   const handleDelete = async (media: MediaItem) => {
     if (!media._id) return;
@@ -55,23 +55,23 @@ export default function MediaGallery({ doc, onUpdate }: MediaGalleryProps) {
 
         <div className="flex items-center gap-3">
           {/* Filter pills */}
-          <div className="flex items-center gap-1 bg-slate-100 rounded-xl p-1">
+          <div className="flex items-center gap-1 bg-slate-100 rounded-sm p-1">
             {([
-              { key: 'all',   label: 'All',    count: allImages.length },
+              { key: 'all', label: 'All', count: allImages.length },
               { key: 'image', label: 'Images', count: imageCount },
               { key: 'video', label: 'Videos', count: videoCount },
             ] as const).map((f) => (
               <button
                 key={f.key}
                 onClick={() => { setFilter(f.key); setLightboxIndex(null); }}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-sm text-xs font-semibold transition-all
                   ${filter === f.key
                     ? 'bg-white text-slate-800 shadow-sm'
                     : 'text-slate-500 hover:text-slate-700'
                   }`}
               >
                 {f.label}
-                <span className={`min-w-[18px] text-center text-[10px] font-bold px-1 py-0.5 rounded
+                <span className={`min-w-[18px] text-center text-[10px] font-bold px-1 py-0.5 rounded-sm
                   ${filter === f.key ? 'bg-indigo-100 text-indigo-600' : 'bg-slate-200 text-slate-400'}`}>
                   {f.count}
                 </span>
@@ -90,7 +90,8 @@ export default function MediaGallery({ doc, onUpdate }: MediaGalleryProps) {
         {filtered.map((media, i) => (
           <div
             key={media._id ?? i}
-            className="group relative rounded-xl overflow-hidden bg-slate-100 cursor-pointer aspect-[4/3]"
+            className={`group relative rounded-sm overflow-hidden bg-slate-100 cursor-pointer aspect-[4/3] transition-all border-2
+              ${media.isMainImage ? 'ring-2 ring-amber-400 ring-offset-2 border-amber-400' : 'border-transparent'}`}
             onClick={() => setLightboxIndex(i)}
           >
             {/* Thumbnail */}
@@ -99,6 +100,11 @@ export default function MediaGallery({ doc, onUpdate }: MediaGalleryProps) {
                 <div className="w-14 h-14 rounded-full bg-white/10 border border-white/20 flex items-center justify-center">
                   <Video size={24} className="text-white/70" />
                 </div>
+              </div>
+            ) : media.mediaType === 'document' ? (
+              <div className="w-full h-full bg-rose-50 flex flex-col items-center justify-center gap-2">
+                <FileText size={28} className="text-rose-400" />
+                <span className="text-[10px] font-bold text-rose-300 uppercase">Document</span>
               </div>
             ) : (
               // eslint-disable-next-line @next/next/no-img-element
@@ -119,7 +125,7 @@ export default function MediaGallery({ doc, onUpdate }: MediaGalleryProps) {
 
             {/* Main badge */}
             {media.isMainImage && (
-              <span className="absolute top-2.5 left-2.5 bg-amber-400 text-white text-[10px] font-bold px-2 py-0.5 rounded-md flex items-center gap-1 shadow-sm z-10">
+              <span className="absolute top-2.5 left-2.5 bg-amber-400 text-white text-[10px] font-bold px-2 py-0.5 rounded-sm flex items-center gap-1 shadow-sm z-10">
                 <Star size={8} fill="white" /> Main
               </span>
             )}
@@ -180,6 +186,24 @@ export default function MediaGallery({ doc, onUpdate }: MediaGalleryProps) {
                 controls
                 className="max-h-[80vh] max-w-full rounded-2xl shadow-2xl"
               />
+            ) : current.mediaType === 'document' ? (
+              <div className="flex flex-col items-center gap-6 bg-white/5 p-12 rounded-3xl border border-white/10 backdrop-blur-xl">
+                <div className="w-24 h-24 rounded-2xl bg-rose-500/20 flex items-center justify-center">
+                  <FileText size={48} className="text-rose-500" />
+                </div>
+                <div className="text-center">
+                  <h3 className="text-xl font-bold text-white mb-2">{current.title}</h3>
+                  <p className="text-white/40 text-sm mb-6">PDF Document</p>
+                  <a 
+                    href={current.url} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 bg-white text-slate-900 px-6 py-3 rounded-xl font-bold hover:bg-slate-200 transition-all"
+                  >
+                    Open Document
+                  </a>
+                </div>
+              </div>
             ) : (
               // eslint-disable-next-line @next/next/no-img-element
               <img

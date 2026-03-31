@@ -8,7 +8,10 @@ export interface IUser extends Document {
   password: string;
   resetPasswordToken?: string;
   resetPasswordExpire?: Date;
+  role: 'administrator' | 'manager' | 'user';
   comparePassword(candidatePassword: string): Promise<boolean>;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 const UserSchema = new Schema<IUser>(
@@ -16,6 +19,7 @@ const UserSchema = new Schema<IUser>(
     name: { type: String, required: true },
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
+    role: { type: String, enum: ['administrator', 'manager', 'user'], default: 'manager' },
     resetPasswordToken: String,
     resetPasswordExpire: Date,
   },
@@ -36,4 +40,8 @@ UserSchema.methods.comparePassword = async function (candidatePassword: string) 
   return await bcrypt.compare(candidatePassword, this.password);
 };
 
-export default mongoose.models.User || mongoose.model<IUser>('User', UserSchema);
+if (mongoose.models.User) {
+  delete (mongoose.models as any).User;
+}
+
+export default mongoose.model<IUser>('User', UserSchema);
