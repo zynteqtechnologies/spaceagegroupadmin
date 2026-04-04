@@ -148,11 +148,10 @@ export default function HeroImagesSection({ project, onUpdate }: Props) {
                         {existing.map((media) => {
                             const isDeleted = media._id ? deletions.has(media._id) : false;
                             return (
-                                <div key={media._id}
-                                    className={`group relative rounded-xl overflow-hidden aspect-video transition-all border-2
-                    ${isDeleted ? 'opacity-40 border-rose-400' : 'border-transparent'}
-                    ${existingMainImageId === media._id && !isDeleted ? 'ring-2 ring-amber-400 ring-offset-2 border-amber-400' : ''}`}
-                                >
+                                        <div key={media._id}
+                                            className={`group relative rounded-xl overflow-hidden aspect-video transition-all border-2
+                    ${isDeleted ? 'opacity-40 border-rose-400' : (existingMainImageId === media._id ? 'border-amber-400 shadow-md shadow-amber-200' : 'border-transparent')}`}
+                                        >
                                     {media.mediaType === 'video' ? (
                                         <div className="w-full h-full bg-slate-800 flex items-center justify-center">
                                             <Video size={18} className="text-white/50" />
@@ -202,7 +201,7 @@ export default function HeroImagesSection({ project, onUpdate }: Props) {
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4">
                         {previews.map((p, i) => (
-                            <div key={i} className="border border-slate-100 rounded-xl overflow-hidden">
+                            <div key={p.id ?? i} className="border border-slate-100 rounded-xl overflow-hidden">
                                 <div className="relative aspect-video bg-slate-100">
                                     {p.mediaType === 'video'
                                         ? <video src={p.previewUrl} className="w-full h-full object-cover" muted />
@@ -222,14 +221,17 @@ export default function HeroImagesSection({ project, onUpdate }: Props) {
                                         className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-indigo-400" />
                                     <input type="text" placeholder="Alt text" value={p.alt} onChange={e => updatePreview(i, { alt: e.target.value })}
                                         className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-indigo-400" />
-                                    <label className="flex items-center gap-2 cursor-pointer">
+                                    <button
+                                        type="button"
+                                        onClick={() => updatePreview(i, { isMainImage: !p.isMainImage })}
+                                        className="flex items-center gap-2 cursor-pointer group/star"
+                                    >
                                         <div className={`w-8 h-8 rounded-lg flex items-center justify-center border-2 transition-all
-                      ${p.isMainImage ? 'bg-amber-400 border-amber-400' : 'border-slate-200'}`}>
-                                            <Star size={13} className={p.isMainImage ? 'text-white fill-white' : 'text-slate-300'} />
-                                            <input type="checkbox" checked={p.isMainImage} onChange={e => updatePreview(i, { isMainImage: e.target.checked })} className="sr-only" />
+                                            ${p.isMainImage ? 'bg-amber-400 border-amber-400 shadow-md shadow-amber-100' : 'border-slate-200 bg-white group-hover/star:border-amber-300'}`}>
+                                            <Star size={13} className={p.isMainImage ? 'text-white fill-white' : 'text-slate-300 group-hover/star:text-amber-300'} />
                                         </div>
                                         <span className="text-xs text-slate-500 font-medium">Set as Main Image</span>
-                                    </label>
+                                    </button>
                                 </div>
                             </div>
                         ))}

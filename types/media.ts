@@ -19,6 +19,7 @@ export interface HeroImageDoc {
 }
 
 export interface PreviewFile {
+    id?: string;
     file: File;
     previewUrl: string;
     title: string;

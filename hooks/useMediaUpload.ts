@@ -30,6 +30,7 @@ export function useMediaUpload({ existingDoc, onSuccess }: UseMediaUploadOptions
     const files = Array.from(fileList);
     setPreviews((prev) => {
       const newPreviews: PreviewFile[] = files.map((file, i) => ({
+        id: Math.random().toString(36).substring(7),
         file,
         previewUrl: URL.createObjectURL(file),
         title: file.name.replace(/\.[^/.]+$/, ''),

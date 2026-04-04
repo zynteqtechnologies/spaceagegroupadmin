@@ -123,8 +123,7 @@ export default function MediaUploader({ existingDoc, onSuccess }: MediaUploaderP
                 <div
                   key={media._id}
                   className={`group relative rounded-xl overflow-hidden aspect-[4/3] cursor-pointer transition-all duration-200 border-2
-                    ${isDeleted ? 'opacity-40 scale-95 border-rose-400' : 'hover:shadow-md border-transparent'}
-                    ${existingMainImageId === media._id && !isDeleted ? 'ring-2 ring-amber-400 ring-offset-2 border-amber-400' : ''}`}
+                    ${isDeleted ? 'opacity-40 scale-95 border-rose-400' : (existingMainImageId === media._id ? 'border-amber-400 shadow-md shadow-amber-200' : 'hover:shadow-md border-transparent')}`}
                 >
                   {media.mediaType === 'video' ? (
                     <div className="w-full h-full bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center">
@@ -202,7 +201,7 @@ export default function MediaUploader({ existingDoc, onSuccess }: MediaUploaderP
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4">
             {previews.map((preview, i) => (
-              <div key={i} className="border border-slate-100 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+              <div key={preview.id ?? i} className="border border-slate-100 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
                 {/* Thumbnail */}
                 <div className="relative aspect-video bg-slate-100">
                   {isVideo(preview) ? (
@@ -255,22 +254,20 @@ export default function MediaUploader({ existingDoc, onSuccess }: MediaUploaderP
                         className="w-10 text-sm outline-none bg-transparent text-slate-700 font-semibold"
                       />
                     </div>
-                    <label className="flex items-center gap-2 ml-auto cursor-pointer group/star">
+                    <button 
+                      type="button"
+                      onClick={() => updatePreview(i, { isMainImage: !preview.isMainImage })}
+                      className="flex items-center gap-2 ml-auto group/star"
+                    >
                       <div className={`w-8 h-8 rounded-lg flex items-center justify-center border-2 transition-all
                         ${preview.isMainImage
                           ? 'bg-amber-400 border-amber-400 shadow-md shadow-amber-100'
                           : 'border-slate-200 bg-white group-hover/star:border-amber-300'
                         }`}>
                         <Star size={14} className={preview.isMainImage ? 'text-white fill-white' : 'text-slate-300 group-hover/star:text-amber-300'} />
-                        <input
-                          type="checkbox"
-                          checked={preview.isMainImage}
-                          onChange={(e) => updatePreview(i, { isMainImage: e.target.checked })}
-                          className="sr-only"
-                        />
                       </div>
-                      <span className="text-xs font-medium text-slate-500">Main</span>
-                    </label>
+                      <span className="text-xs font-medium text-slate-500 whitespace-nowrap">Main</span>
+                    </button>
                   </div>
                 </div>
               </div>
