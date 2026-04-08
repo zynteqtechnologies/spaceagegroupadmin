@@ -148,10 +148,10 @@ export default function HeroImagesSection({ project, onUpdate }: Props) {
                         {existing.map((media) => {
                             const isDeleted = media._id ? deletions.has(media._id) : false;
                             return (
-                                        <div key={media._id}
-                                            className={`group relative rounded-xl overflow-hidden aspect-video transition-all border-2
+                                <div key={media._id}
+                                    className={`group relative rounded-xl overflow-hidden aspect-video transition-all border-2
                     ${isDeleted ? 'opacity-40 border-rose-400' : (existingMainImageId === media._id ? 'border-amber-400 shadow-md shadow-amber-200' : 'border-transparent')}`}
-                                        >
+                                >
                                     {media.mediaType === 'video' ? (
                                         <div className="w-full h-full bg-slate-800 flex items-center justify-center">
                                             <Video size={18} className="text-white/50" />
@@ -201,7 +201,7 @@ export default function HeroImagesSection({ project, onUpdate }: Props) {
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4">
                         {previews.map((p, i) => (
-                            <div key={p.id ?? i} className="border border-slate-100 rounded-xl overflow-hidden">
+                            <div key={i} className="border border-slate-100 rounded-xl overflow-hidden">
                                 <div className="relative aspect-video bg-slate-100">
                                     {p.mediaType === 'video'
                                         ? <video src={p.previewUrl} className="w-full h-full object-cover" muted />
