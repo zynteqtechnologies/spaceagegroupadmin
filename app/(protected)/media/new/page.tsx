@@ -201,9 +201,9 @@ export default function NewMediaPage() {
     };
 
     return (
-        <div className="pb-20">
+        <div className="min-h-[calc(100vh-64px)] bg-[#f9fbfd]">
             {/* ── Page Header ────────────────────────────────────────────────── */}
-            <div className="bg-white border-b border-slate-100 px-8 py-5 mb-8">
+            <div className="bg-white border-b border-slate-100 px-4 lg:px-8 py-5 mb-6">
                 <div className="flex items-center gap-1.5 mb-3 text-xs text-slate-400 font-medium">
                     <span className="hover:text-slate-600 cursor-pointer transition-colors" onClick={() => router.push('/dashboard')}>Dashboard</span>
                     <ChevronRight size={12} />
@@ -212,7 +212,7 @@ export default function NewMediaPage() {
                     <span className="text-slate-700 font-semibold">New Collection</span>
                 </div>
 
-                <div className="flex items-center justify-between gap-4">
+                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
                     <div>
                         <h1 className="text-xl font-bold text-slate-900 leading-tight">Create Media Collection</h1>
                         <p className="text-sm text-slate-400 mt-0.5">Combine existing assets with new uploads or video links</p>
@@ -221,41 +221,41 @@ export default function NewMediaPage() {
                     <button
                         onClick={handleSubmit}
                         disabled={submitting || !selectedProjectId || !title.trim()}
-                        className="flex items-center gap-2 bg-slate-900 hover:bg-slate-800 disabled:bg-slate-200 disabled:text-slate-400 text-white font-semibold py-2.5 px-6 rounded-sm text-sm transition-all shadow-sm hover:shadow-md"
+                        className="flex items-center gap-2 bg-slate-900 hover:bg-slate-800 disabled:bg-slate-200 disabled:text-slate-400 text-white font-semibold py-2.5 px-6 rounded-sm text-sm transition-all shadow-sm hover:shadow-md shrink-0 w-fit"
                     >
                         {submitting ? <Loader2 size={16} className="animate-spin" /> : <><Save size={16} /> Save Collection</>}
                     </button>
                 </div>
             </div>
 
-            <div className="px-8 mx-auto space-y-8">
+            <div className="px-4 lg:px-8 mx-auto max-w-7xl space-y-6 pb-12">
                 {error && (
-                    <div className="bg-rose-50 border border-rose-100 text-rose-600 px-4 py-3 rounded-lg text-sm flex items-center gap-2">
+                    <div className="bg-rose-50 border border-rose-100 text-rose-600 px-4 py-3 rounded-sm text-sm flex items-center gap-2">
                         <X size={16} className="shrink-0" />
                         {error}
                     </div>
                 )}
 
                 {/* ── Section 1: Basic Info ────────────────────────────────────── */}
-                <section className="bg-white rounded-xl border border-slate-100 shadow-sm p-6">
-                    <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-5 flex items-center gap-2">
-                        <span className="w-6 h-6 rounded-full bg-slate-900 text-white flex items-center justify-center text-[10px]">1</span>
+                <section className="bg-white rounded-sm border border-slate-100 shadow-sm p-6">
+                    <h2 className="text-xs font-bold text-slate-800 uppercase tracking-wider mb-4 flex items-center gap-2">
+                        <span className="w-5 h-5 rounded-full bg-slate-900 text-white flex items-center justify-center text-[10px]">1</span>
                         Basic Information
                     </h2>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="space-y-1.5">
-                            <label className="text-xs font-semibold text-slate-600 uppercase tracking-wide">Select Project *</label>
+                        <div className="space-y-1">
+                            <label className="text-xs font-semibold text-slate-600 uppercase tracking-wide block">Select Project *</label>
                             <div className="relative">
                                 {loadingProjects ? (
-                                    <div className="w-full border border-slate-200 rounded-lg px-4 py-2.5 bg-slate-50 flex items-center gap-2 text-slate-400 text-sm">
+                                    <div className="w-full border border-slate-200 rounded-sm px-4 py-2.5 bg-slate-50 flex items-center gap-2 text-slate-400 text-sm">
                                         <Loader2 size={14} className="animate-spin" /> Loading projects…
                                     </div>
                                 ) : (
                                     <select
                                         value={selectedProjectId}
                                         onChange={(e) => setSelectedProjectId(e.target.value)}
-                                        className="w-full border border-slate-200 rounded-lg px-4 py-2.5 text-sm outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-50 transition-all bg-white appearance-none cursor-pointer"
+                                        className="w-full border border-slate-200 rounded-sm px-4 py-2 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-50 transition-all bg-white appearance-none cursor-pointer"
                                     >
                                         <option value="">Choose a project</option>
                                         {projects.map(p => (
@@ -263,44 +263,44 @@ export default function NewMediaPage() {
                                         ))}
                                     </select>
                                 )}
-                                <Building2 size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                                <Building2 size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                             </div>
                         </div>
 
-                        <div className="space-y-1.5">
-                            <label className="text-xs font-semibold text-slate-600 uppercase tracking-wide">Collection Title *</label>
+                        <div className="space-y-1">
+                            <label className="text-xs font-semibold text-slate-600 uppercase tracking-wide block">Collection Title *</label>
                             <input
                                 type="text"
                                 placeholder="e.g. Marketing Brochure & Site Photos"
                                 value={title}
                                 onChange={(e) => setTitle(e.target.value)}
-                                className="w-full border border-slate-200 rounded-lg px-4 py-2.5 text-sm outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-50 transition-all shadow-sm"
+                                className="w-full border border-slate-200 rounded-sm px-4 py-2 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-50 transition-all bg-white"
                             />
                         </div>
                     </div>
                 </section>
 
                 {/* ── Section 2: Assets Integration ────────────────────────────── */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     {/* Existing Media Selector */}
-                    <section className={`bg-white rounded-xl border border-slate-100 shadow-sm p-6 transition-all ${!selectedProjectId ? 'opacity-50 pointer-events-none' : ''}`}>
-                        <div className="flex items-center justify-between mb-5">
-                            <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
-                                <span className="w-6 h-6 rounded-full bg-slate-900 text-white flex items-center justify-center text-[10px]">2</span>
+                    <section className={`bg-white rounded-sm border border-slate-100 shadow-sm p-6 transition-all ${!selectedProjectId ? 'opacity-50 pointer-events-none' : ''}`}>
+                        <div className="flex items-center justify-between mb-4">
+                            <h2 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                                <span className="w-5 h-5 rounded-full bg-slate-900 text-white flex items-center justify-center text-[10px]">2</span>
                                 Select Existing Media
                             </h2>
-                            <span className="text-[10px] font-bold bg-indigo-50 text-indigo-600 px-2 py-1 rounded-full uppercase">
+                            <span className="text-[10px] font-bold bg-indigo-50 text-indigo-600 px-2 py-1 rounded-sm uppercase">
                                 {selectedExistingIds.size} Selected
                             </span>
                         </div>
 
                         <div className="max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
                             {!selectedProjectId ? (
-                                <div className="py-10 text-center text-slate-400 text-[11px] border border-dashed border-slate-100 rounded-xl">
+                                <div className="py-10 text-center text-slate-400 text-xs border border-dashed border-slate-200 rounded-sm">
                                     Select a project first
                                 </div>
                             ) : projectMedia.length === 0 ? (
-                                <div className="py-10 text-center text-slate-400 text-[11px] border border-dashed border-slate-100 rounded-xl">
+                                <div className="py-10 text-center text-slate-400 text-xs border border-dashed border-slate-200 rounded-sm">
                                     No media found in this project
                                 </div>
                             ) : (
@@ -312,7 +312,7 @@ export default function NewMediaPage() {
                                             <div
                                                 key={id}
                                                 onClick={() => toggleExistingSelection(id)}
-                                                className={`group relative aspect-square rounded-lg overflow-hidden cursor-pointer border-2 transition-all
+                                                className={`group relative aspect-square rounded-sm overflow-hidden cursor-pointer border-2 transition-all
                                                     ${isSelected ? 'border-indigo-500 ring-2 ring-indigo-50' : 'border-slate-100 opacity-60 hover:opacity-100'}`}
                                             >
                                                 {media.mediaType === 'video' ? (
@@ -341,9 +341,9 @@ export default function NewMediaPage() {
                     </section>
 
                     {/* New Uploads & YouTube */}
-                    <section className={`bg-white rounded-xl border border-slate-100 shadow-sm p-6 transition-all ${!selectedProjectId ? 'opacity-50 pointer-events-none' : ''}`}>
-                        <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-5 flex items-center gap-2">
-                            <span className="w-6 h-6 rounded-full bg-slate-900 text-white flex items-center justify-center text-[10px]">3</span>
+                    <section className={`bg-white rounded-sm border border-slate-100 shadow-sm p-6 transition-all ${!selectedProjectId ? 'opacity-50 pointer-events-none' : ''}`}>
+                        <h2 className="text-xs font-bold text-slate-800 uppercase tracking-wider mb-4 flex items-center gap-2">
+                            <span className="w-5 h-5 rounded-full bg-slate-900 text-white flex items-center justify-center text-[10px]">3</span>
                             Add New Media
                         </h2>
 
@@ -351,14 +351,12 @@ export default function NewMediaPage() {
                             {/* File Upload Trigger */}
                             <div
                                 onClick={() => fileInputRef.current?.click()}
-                                className="border-2 border-dashed border-slate-200 rounded-xl p-6 flex items-center gap-4 hover:border-indigo-400 hover:bg-indigo-50/10 cursor-pointer transition-all"
+                                className="border border-dashed border-slate-300 rounded-sm p-6 flex flex-col items-center gap-3 hover:border-indigo-400 hover:bg-[#f9fbfd] cursor-pointer transition-all bg-[#f9fbfd]"
                             >
-                                <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center shrink-0">
-                                    <CloudUpload className="text-slate-400" size={20} />
-                                </div>
-                                <div>
-                                    <p className="text-xs font-bold text-slate-700">Upload Media Files</p>
-                                    <p className="text-[10px] text-slate-400">Images, Videos, or Documents</p>
+                                <CloudUpload className="text-slate-400" size={24} />
+                                <div className="text-center">
+                                    <p className="text-xs font-semibold text-slate-700">Upload Media Files</p>
+                                    <p className="text-[10px] text-slate-400 mt-1">Images, Videos, or Documents</p>
                                 </div>
                                 <input
                                     type="file" multiple className="hidden" ref={fileInputRef}
@@ -367,9 +365,9 @@ export default function NewMediaPage() {
                             </div>
 
                             {/* YouTube URL Input */}
-                            <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
-                                <div className="flex items-center gap-2 mb-3">
-                                    <Youtube className="text-rose-500" size={16} />
+                            <div className="bg-[#f9fbfd] rounded-sm p-4 border border-slate-100">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <Youtube className="text-rose-500" size={14} />
                                     <p className="text-[10px] font-bold text-slate-600 uppercase tracking-widest">Connect YouTube Video</p>
                                 </div>
                                 <div className="flex gap-2">
@@ -379,13 +377,13 @@ export default function NewMediaPage() {
                                             placeholder="Paste YouTube link here..."
                                             value={youtubeUrl}
                                             onChange={(e) => setYoutubeUrl(e.target.value)}
-                                            className="w-full bg-white border border-slate-200 rounded-lg pl-8 pr-3 py-2 text-xs outline-none focus:border-rose-400 transition-all font-medium"
+                                            className="w-full bg-white border border-slate-200 rounded-sm pl-8 pr-3 py-2 text-xs outline-none focus:border-rose-400 transition-all font-medium"
                                         />
-                                        <LinkIcon className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-300" size={14} />
+                                        <LinkIcon className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-300" size={12} />
                                     </div>
                                     <button
                                         onClick={addYoutubeVideo}
-                                        className="bg-slate-900 text-white px-4 py-2 rounded-lg text-xs font-bold hover:bg-slate-800 transition-all"
+                                        className="bg-slate-900 text-white px-4 py-2 rounded-sm text-xs font-semibold hover:bg-slate-800 transition-all"
                                     >
                                         Add
                                     </button>
@@ -398,16 +396,16 @@ export default function NewMediaPage() {
                 {/* ── Section 4: Items Management ──────────────────────────────── */}
                 {newItems.length > 0 && (
                     <section className="space-y-4">
-                        <h2 className="text-xs font-bold text-slate-600 uppercase tracking-widest flex items-center gap-2 ml-1">
+                        <h2 className="text-xs font-semibold text-slate-600 uppercase tracking-wide flex items-center gap-2 ml-1">
                             Recently Added Assets ({newItems.length})
                         </h2>
                         <div className="grid grid-cols-1 gap-4">
                             {newItems.map((p, i) => (
-                                <div key={i} className="flex flex-col md:flex-row gap-4 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm animate-in fade-in slide-in-from-bottom-2">
+                                <div key={i} className="flex flex-col md:flex-row gap-4 bg-white p-4 rounded-sm border border-slate-100 shadow-sm animate-in fade-in slide-in-from-bottom-2">
                                     <div className="flex items-center gap-4 shrink-0">
-                                        <div className="w-24 h-24 rounded-xl overflow-hidden bg-slate-100 shrink-0 relative">
+                                        <div className="w-24 h-24 rounded-sm overflow-hidden bg-[#f9fbfd] border border-slate-100 shrink-0 relative">
                                             {p.provider === 'youtube' && (
-                                                <div className="absolute top-1 left-1 z-10 bg-rose-500 text-white p-1 rounded-md shadow-sm">
+                                                <div className="absolute top-1 left-1 z-10 bg-rose-500 text-white p-1 rounded-sm shadow-sm">
                                                     <Youtube size={12} />
                                                 </div>
                                             )}
@@ -427,26 +425,26 @@ export default function NewMediaPage() {
                                     </div>
 
                                     <div className="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-4">
-                                        <div className="space-y-1.5">
-                                            <div className="flex items-center gap-1.5 text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">
-                                                <Tag size={10} /> Asset Title
+                                        <div className="space-y-1">
+                                            <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-600 uppercase tracking-wide block">
+                                                <Tag size={12} className="text-slate-400" /> Asset Title
                                             </div>
                                             <input
                                                 type="text"
                                                 value={p.title}
                                                 onChange={(e) => updateNewItem(i, { title: e.target.value })}
-                                                className="w-full border border-slate-100 bg-slate-50 rounded-xl px-4 py-2.5 text-xs outline-none focus:border-indigo-400 focus:bg-white transition-all font-semibold"
+                                                className="w-full border border-slate-200 rounded-sm px-3 py-2 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-50 transition-all bg-white"
                                             />
                                         </div>
 
-                                        <div className="space-y-1.5">
-                                            <div className="flex items-center gap-1.5 text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">
-                                                <Tag size={10} /> Category
+                                        <div className="space-y-1">
+                                            <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-600 uppercase tracking-wide block">
+                                                <Tag size={12} className="text-slate-400" /> Category
                                             </div>
                                             <select
                                                 value={p.category}
                                                 onChange={(e) => updateNewItem(i, { category: e.target.value as any })}
-                                                className="w-full border border-slate-100 bg-slate-50 rounded-xl px-4 py-2.5 text-xs outline-none focus:border-indigo-400 focus:bg-white transition-all font-semibold cursor-pointer appearance-none"
+                                                className="w-full border border-slate-200 rounded-sm px-3 py-2 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-50 transition-all bg-white cursor-pointer appearance-none"
                                             >
                                                 <option value="image">Image</option>
                                                 <option value="video">Video</option>
@@ -456,19 +454,19 @@ export default function NewMediaPage() {
                                             </select>
                                         </div>
 
-                                        <div className="space-y-1.5">
-                                            <div className="flex items-center gap-1.5 text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">
-                                                <AlignLeft size={10} /> Description
+                                        <div className="space-y-1">
+                                            <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-600 uppercase tracking-wide block">
+                                                <AlignLeft size={12} className="text-slate-400" /> Description
                                             </div>
-                                            <div className="relative h-[41px]">
+                                            <div className="relative">
                                                 <input
                                                     type="text"
                                                     placeholder="Add a context..."
                                                     value={p.description}
                                                     onChange={(e) => updateNewItem(i, { description: e.target.value })}
-                                                    className="w-full h-full border border-slate-100 bg-slate-50 rounded-xl px-4 py-2.5 text-xs outline-none focus:border-indigo-400 focus:bg-white transition-all font-medium pr-10"
+                                                    className="w-full border border-slate-200 rounded-sm px-3 py-2 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-50 transition-all bg-white pr-9"
                                                 />
-                                                <button onClick={() => removeNewItem(i)} className="absolute right-2 top-1/2 -translate-y-1/2 bg-white text-slate-300 hover:text-rose-500 w-7 h-7 flex items-center justify-center rounded-lg shadow-sm border border-slate-100 transition-colors">
+                                                <button onClick={() => removeNewItem(i)} className="absolute right-1 top-1/2 -translate-y-1/2 bg-white text-slate-400 hover:text-rose-500 w-7 h-7 flex items-center justify-center rounded-sm transition-colors">
                                                     <Trash2 size={14} />
                                                 </button>
                                             </div>

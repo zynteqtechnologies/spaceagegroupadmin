@@ -93,49 +93,48 @@ export default function EditTeamMemberPage({ params }: { params: Promise<{ id: s
     }
 
     return (
-        <div className="pb-20">
+        <div className="min-h-[calc(100vh-64px)] bg-[#f9fbfd]">
             {/* ── Header ────────────────────────────────────────────────────── */}
-            <div className="bg-white border-b border-slate-100 px-8 py-6 mb-8">
-                <button
-                    onClick={() => router.push('/our-team')}
-                    className="flex items-center gap-1.5 text-xs text-slate-400 font-medium hover:text-slate-600 transition-colors mb-4"
-                >
-                    <ChevronLeft size={14} /> Back to Team
-                </button>
+            <div className="bg-white border-b border-slate-100 px-4 lg:px-8 py-5">
+                <div className="flex items-center gap-1.5 mb-3 text-xs text-slate-400 font-medium">
+                    <button onClick={() => router.push('/our-team')} className="hover:text-slate-600 transition-colors">Our Team</button>
+                    <ChevronLeft size={12} className="rotate-180" />
+                    <span className="text-slate-700 font-semibold truncate max-w-[200px]">{formData.name}</span>
+                </div>
 
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
                     <div>
-                        <h1 className="text-2xl font-black text-slate-900 leading-tight">Edit Member Profile</h1>
-                        <p className="text-sm text-slate-400 mt-1">Update professional details and social links</p>
+                        <h1 className="text-xl font-bold text-slate-900 leading-tight">Edit Member Profile</h1>
+                        <p className="text-sm text-slate-400 mt-0.5">Update professional details and social links</p>
                     </div>
 
                     <button
                         onClick={handleSubmit}
                         disabled={submitting}
-                        className="flex items-center gap-2 bg-slate-900 hover:bg-slate-800 disabled:bg-slate-200 disabled:text-slate-400 text-white font-semibold py-2.5 px-6 rounded-sm text-sm transition-all shadow-sm"
+                        className="flex items-center gap-2 bg-slate-900 hover:bg-slate-800 disabled:bg-slate-200 disabled:text-slate-400 text-white font-semibold py-2.5 px-6 rounded-sm text-sm transition-all shadow-sm shrink-0 w-fit"
                     >
-                        {submitting ? <Loader2 size={16} className="animate-spin" /> : <><Save size={16} /> Save Changes</>}
+                        {submitting ? <><Loader2 size={14} className="animate-spin" /> Saving…</> : <><Save size={14} /> Save Changes</>}
                     </button>
                 </div>
             </div>
 
-            <form onSubmit={handleSubmit} className="px-8 mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8">
+            <form onSubmit={handleSubmit} className="px-4 lg:px-8 py-6 grid grid-cols-1 lg:grid-cols-12 gap-6 max-w-7xl">
                 {/* ── Left Column: Profile Photo ───────────────────────────────── */}
                 <div className="lg:col-span-4 space-y-6">
-                    <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
-                        <h3 className="text-sm font-bold text-slate-800 uppercase tracking-widest mb-6 flex items-center gap-2">
+                    <div className="bg-white p-6 border border-slate-100 shadow-sm rounded-sm">
+                        <h3 className="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2">
                             <Camera size={16} className="text-blue-500" />
                             Profile Photo
                         </h3>
 
-                        <div className="relative aspect-square rounded-2xl bg-slate-50 border-2 border-dashed border-slate-200 overflow-hidden group cursor-pointer">
+                        <div className="relative aspect-square rounded-sm bg-[#f9fbfd] border border-dashed border-slate-300 overflow-hidden group cursor-pointer">
                             {preview ? (
                                 // eslint-disable-next-line @next/next/no-img-element
                                 <img src={preview} alt="Preview" className="w-full h-full object-cover" />
                             ) : (
                                 <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-400 group-hover:text-slate-600 transition-colors">
-                                    <User2 size={48} strokeWidth={1} className="mb-2" />
-                                    <span className="text-xs font-bold uppercase tracking-wider">Upload Image</span>
+                                    <User2 size={40} strokeWidth={1.5} className="mb-2" />
+                                    <span className="text-xs font-semibold">Upload Image</span>
                                 </div>
                             )}
                             <input
@@ -154,100 +153,102 @@ export default function EditTeamMemberPage({ params }: { params: Promise<{ id: s
                 {/* ── Right Column: Details ────────────────────────────────────── */}
                 <div className="lg:col-span-8 space-y-6">
                     {error && (
-                        <div className="bg-rose-50 border border-rose-100 text-rose-600 px-4 py-3 rounded-xl text-sm font-medium flex items-center gap-2">
+                        <div className="bg-rose-50 border border-rose-100 text-rose-600 px-4 py-3 rounded-sm text-sm font-medium flex items-center gap-2">
                             <Info size={16} /> {error}
                         </div>
                     )}
 
-                    <div className="bg-white p-8 rounded-2xl border border-slate-100 shadow-sm space-y-8">
+                    <div className="bg-white p-6 border border-slate-100 shadow-sm rounded-sm space-y-6">
+                        <h2 className="text-base font-bold text-slate-800 mb-4">Professional Details</h2>
+
                         {/* Basic Info */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Full Name</label>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-1">
+                                <label className="text-xs font-semibold text-slate-600 uppercase tracking-wide block">Full Name *</label>
                                 <input
                                     type="text"
                                     required
                                     value={formData.name}
                                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                    className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-sm font-medium text-slate-900 outline-none focus:border-blue-400 focus:bg-white transition-all"
+                                    className="w-full border border-slate-200 rounded-sm px-4 py-2.5 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-50 transition-all bg-white"
                                 />
                             </div>
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Position / Title</label>
+                            <div className="space-y-1">
+                                <label className="text-xs font-semibold text-slate-600 uppercase tracking-wide block">Position / Title *</label>
                                 <input
                                     type="text"
                                     required
                                     value={formData.position}
                                     onChange={(e) => setFormData({ ...formData, position: e.target.value })}
-                                    className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-sm font-medium text-slate-900 outline-none focus:border-blue-400 focus:bg-white transition-all"
+                                    className="w-full border border-slate-200 rounded-sm px-4 py-2.5 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-50 transition-all bg-white"
                                 />
                             </div>
                         </div>
 
                         {/* Education & Experience */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 border-t border-slate-50">
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 flex items-center gap-1.5">
-                                    <GraduationCap size={12} /> Education / Study
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-slate-100">
+                            <div className="space-y-1">
+                                <label className="text-xs font-semibold text-slate-600 uppercase tracking-wide flex items-center gap-1.5 block">
+                                    <GraduationCap size={14} /> Education / Study
                                 </label>
                                 <input
                                     type="text"
                                     value={formData.study}
                                     onChange={(e) => setFormData({ ...formData, study: e.target.value })}
-                                    className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-sm font-medium text-slate-900 outline-none focus:border-blue-400 focus:bg-white transition-all"
+                                    className="w-full border border-slate-200 rounded-sm px-4 py-2.5 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-50 transition-all bg-white"
                                 />
                             </div>
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 flex items-center gap-1.5">
-                                    <Briefcase size={12} /> Work Experience
+                            <div className="space-y-1">
+                                <label className="text-xs font-semibold text-slate-600 uppercase tracking-wide flex items-center gap-1.5 block">
+                                    <Briefcase size={14} /> Work Experience
                                 </label>
                                 <input
                                     type="text"
                                     value={formData.experience}
                                     onChange={(e) => setFormData({ ...formData, experience: e.target.value })}
-                                    className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-sm font-medium text-slate-900 outline-none focus:border-blue-400 focus:bg-white transition-all"
+                                    className="w-full border border-slate-200 rounded-sm px-4 py-2.5 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-50 transition-all bg-white"
                                 />
                             </div>
                         </div>
 
                         {/* Description & Relation */}
-                        <div className="space-y-2 pt-6 border-t border-slate-50">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 flex items-center gap-1.5">
-                                <AlignLeft size={12} /> Professional Biography
+                        <div className="space-y-1 pt-4 border-t border-slate-100">
+                            <label className="text-xs font-semibold text-slate-600 uppercase tracking-wide flex items-center gap-1.5 block">
+                                <AlignLeft size={14} /> Professional Biography
                             </label>
                             <textarea
                                 rows={4}
                                 value={formData.description}
                                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-sm font-medium text-slate-900 outline-none focus:border-blue-400 focus:bg-white transition-all resize-none"
+                                className="w-full border border-slate-200 rounded-sm px-4 py-2.5 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-50 transition-all bg-white resize-none"
                             />
                         </div>
 
-                        <div className="space-y-2 pt-6 border-t border-slate-50">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 flex items-center gap-1.5">
-                                <Building2 size={12} /> Relation to Space Age Group
+                        <div className="space-y-1 pt-4 border-t border-slate-100">
+                            <label className="text-xs font-semibold text-slate-600 uppercase tracking-wide flex items-center gap-1.5 block">
+                                <Building2 size={14} /> Relation to Space Age Group
                             </label>
                             <input
                                 type="text"
                                 value={formData.relationToGroup}
                                 onChange={(e) => setFormData({ ...formData, relationToGroup: e.target.value })}
-                                className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-sm font-medium text-slate-900 outline-none focus:border-blue-400 focus:bg-white transition-all"
+                                className="w-full border border-slate-200 rounded-sm px-4 py-2.5 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-50 transition-all bg-white"
                             />
                         </div>
 
                         {/* Social Links */}
-                        <div className="pt-8 border-t border-slate-50">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-4 block">Social Profiles</label>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="pt-4 border-t border-slate-100">
+                            <label className="text-xs font-semibold text-slate-600 uppercase tracking-wide block mb-3">Social Profiles</label>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                                 <div className="relative">
                                     <input
                                         type="text"
                                         value={formData.linkedin}
                                         onChange={(e) => setFormData({ ...formData, linkedin: e.target.value })}
                                         placeholder="LinkedIn URL"
-                                        className="w-full bg-slate-50 border border-slate-100 rounded-xl pl-10 pr-4 py-2.5 text-xs font-medium text-slate-900 outline-none focus:border-blue-400 focus:bg-white transition-all"
+                                        className="w-full border border-slate-200 rounded-sm pl-9 pr-3 py-2 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-50 transition-all bg-white"
                                     />
-                                    <Linkedin className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+                                    <Linkedin className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
                                 </div>
                                 <div className="relative">
                                     <input
@@ -255,9 +256,9 @@ export default function EditTeamMemberPage({ params }: { params: Promise<{ id: s
                                         value={formData.instagram}
                                         onChange={(e) => setFormData({ ...formData, instagram: e.target.value })}
                                         placeholder="Instagram URL"
-                                        className="w-full bg-slate-50 border border-slate-100 rounded-xl pl-10 pr-4 py-2.5 text-xs font-medium text-slate-900 outline-none focus:border-rose-400 focus:bg-white transition-all"
+                                        className="w-full border border-slate-200 rounded-sm pl-9 pr-3 py-2 text-sm outline-none focus:border-rose-400 focus:ring-2 focus:ring-rose-50 transition-all bg-white"
                                     />
-                                    <Instagram className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+                                    <Instagram className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
                                 </div>
                                 <div className="relative">
                                     <input
@@ -265,21 +266,21 @@ export default function EditTeamMemberPage({ params }: { params: Promise<{ id: s
                                         value={formData.facebook}
                                         onChange={(e) => setFormData({ ...formData, facebook: e.target.value })}
                                         placeholder="Facebook URL"
-                                        className="w-full bg-slate-50 border border-slate-100 rounded-xl pl-10 pr-4 py-2.5 text-xs font-medium text-slate-900 outline-none focus:border-blue-600 focus:bg-white transition-all"
+                                        className="w-full border border-slate-200 rounded-sm pl-9 pr-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-50 transition-all bg-white"
                                     />
-                                    <Facebook className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+                                    <Facebook className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
                                 </div>
                             </div>
                         </div>
 
-                        <div className="pt-6 border-t border-slate-50 flex items-center justify-between">
+                        <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
                             <div className="space-y-1">
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 block">Display Order</label>
+                                <label className="text-xs font-semibold text-slate-600 uppercase tracking-wide block">Display Order</label>
                                 <input
                                     type="number"
                                     value={formData.order}
                                     onChange={(e) => setFormData({ ...formData, order: e.target.value })}
-                                    className="w-24 bg-slate-50 border border-slate-100 rounded-xl px-4 py-2 text-sm font-bold text-slate-900 outline-none"
+                                    className="w-24 border border-slate-200 rounded-sm px-4 py-2 text-sm font-semibold outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-50 transition-all bg-white"
                                 />
                             </div>
                         </div>

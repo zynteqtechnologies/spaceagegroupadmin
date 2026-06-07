@@ -75,90 +75,118 @@ export default function BlogDashboard() {
                     <span className="text-slate-700 font-semibold">Blog</span>
                 </div>
 
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                <div className="flex items-center justify-between gap-4">
                     <div>
-                        <h1 className="text-xl font-bold text-slate-900 leading-tight flex items-center gap-2">
-                            <FileText size={24} className="text-blue-600" />
+                        <h1 className="text-xl font-bold text-slate-900 leading-tight">
                             Blog Management
                         </h1>
                         <p className="text-sm text-slate-400 mt-0.5">Create and moderate your article ecosystem</p>
                     </div>
 
-                    <div className="flex items-center gap-3">
-                        <div className="relative hidden md:block">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                            <input
-                                type="text"
-                                placeholder="Search articles..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                className="pl-10 pr-4 py-2 bg-slate-50 border border-slate-100 rounded-lg text-sm focus:bg-white focus:ring-2 focus:ring-blue-100 transition-all outline-none w-64"
-                            />
+                    <div className="hidden sm:flex items-center gap-2">
+                        <div className="flex items-center gap-2 bg-[#f9fbfd] rounded-sm border border-gray-200 shadow-sm px-3.5 py-2">
+                            <FileText size={14} className="text-black" />
+                            <span className="text-xs font-bold text-black">{posts.length} Total</span>
                         </div>
+                    </div>
+                </div>
+
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mt-5">
+                    <div className="flex items-center gap-1">
+                        <button className="flex items-center gap-2 px-4 py-2 text-sm font-semibold bg-slate-900 text-white shadow-sm rounded-sm">
+                            <FileText size={14} />
+                            All Articles
+                        </button>
                         <Link
                             href="/blog/new"
-                            className="flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white font-semibold py-2.5 px-6 rounded-sm text-sm transition-all shadow-sm"
+                            className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-slate-600 hover:text-slate-800 bg-[#f9fbfd] rounded-sm border border-gray-200 hover:bg-slate-50 transition-all"
                         >
-                            <Plus size={16} /> New Article
+                            <Plus size={14} />
+                            Create New
                         </Link>
+                    </div>
+
+                    <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                        <input
+                            type="text"
+                            placeholder="Search articles..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="pl-10 pr-4 py-2 bg-[#f9fbfd] border border-gray-200 rounded-sm text-sm focus:bg-white focus:ring-1 focus:ring-slate-900 transition-all outline-none w-full sm:w-64"
+                        />
                     </div>
                 </div>
             </div>
 
             {/* ── Content ────────────────────────────────────────────────────── */}
-            <div className="px-4 lg:px-8 py-8 mx-auto">
+            <div className="px-4 lg:px-8 py-6 bg-[#f9fbfd] min-h-[calc(100vh-140px)]">
                 {filteredPosts.length === 0 ? (
-                    <div className="bg-white border border-slate-100 rounded-2xl p-16 text-center shadow-sm">
-                        <div className="w-20 h-20 rounded-full bg-slate-50 flex items-center justify-center mx-auto mb-6 text-slate-300">
-                            <FileText size={32} />
+                    <div className="bg-white border border-slate-100 shadow-sm flex flex-col items-center justify-center py-24 gap-5">
+                        <div className="w-20 h-20 rounded-3xl bg-slate-50 border-2 border-dashed border-slate-200 flex items-center justify-center">
+                            <FileText size={28} className="text-slate-300" />
                         </div>
-                        <h3 className="text-lg font-bold text-slate-900 mb-2">No articles found</h3>
-                        <p className="text-sm text-slate-400 mb-8 max-w-sm mx-auto">
-                            {searchTerm ? 'No results match your search criteria.' : 'Start sharing stories and news with your community.'}
-                        </p>
+                        <div className="text-center">
+                            <p className="font-semibold text-slate-700 mb-1">No articles found</p>
+                            <p className="text-sm text-slate-400 max-w-xs leading-relaxed">
+                                Create your first article to get started.
+                            </p>
+                        </div>
+                        <Link
+                            href="/blog/new"
+                            className="flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white text-sm font-semibold px-6 py-2.5 rounded-sm transition-all shadow-sm hover:shadow-md hover:-translate-y-0.5"
+                        >
+                            <Plus size={15} /> New Article
+                        </Link>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                         {filteredPosts.map((post) => (
-                            <div key={post._id} className="group bg-white rounded-2xl border border-slate-100 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col relative">
-                                {/* Thumbnail Section */}
-                                <div className="relative aspect-video overflow-hidden">
-                                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                                    <img
-                                        src={post.image.url}
-                                        alt={post.title}
-                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                                    />
+                            <div key={post._id} className="group bg-white border border-slate-100 shadow-sm overflow-hidden hover:shadow-md hover:border-slate-200 transition-all relative flex flex-col">
+                                {/* Thumbnail */}
+                                <div className="relative aspect-video bg-gradient-to-br from-slate-100 to-slate-200 overflow-hidden">
+                                    {post.image?.url ? (
+                                        // eslint-disable-next-line @next/next/no-img-element
+                                        <img
+                                            src={post.image.url}
+                                            alt={post.title}
+                                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                        />
+                                    ) : (
+                                        <div className="w-full h-full flex items-center justify-center">
+                                            <FileText size={32} className="text-slate-300" />
+                                        </div>
+                                    )}
                                     <div className="absolute top-3 left-3 flex gap-2">
-                                        <div className={`py-1 px-3 rounded-full text-[10px] font-black uppercase tracking-widest backdrop-blur-md shadow-sm flex items-center gap-1.5 ${post.status === 'published'
-                                            ? 'bg-emerald-500/90 text-white'
-                                            : 'bg-slate-900/90 text-white'
+                                        <div className={`flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-1 rounded-full border shadow-sm backdrop-blur-md ${post.status === 'published'
+                                                ? 'bg-emerald-500/90 text-white border-emerald-500/20'
+                                                : 'bg-slate-900/90 text-white border-slate-900/20'
                                             }`}>
                                             {post.status === 'published' ? <Globe size={10} /> : <Lock size={10} />}
-                                            {post.status}
+                                            {post.status.toUpperCase()}
                                         </div>
                                     </div>
-                                    <div className="absolute top-3 right-3 py-1 px-3 bg-white/90 backdrop-blur-md rounded-full text-[10px] font-black uppercase tracking-widest text-slate-600 shadow-sm border border-white/20">
+                                    <div className="absolute top-3 right-3 py-1 px-3 bg-white/90 backdrop-blur-md rounded-sm text-[10px] font-black uppercase tracking-widest text-slate-600 shadow-sm border border-white/20">
                                         {post.category}
                                     </div>
                                 </div>
 
                                 {/* Content Section */}
-                                <div className="p-6 flex-1 flex flex-col">
-                                    <h3 className="font-bold text-slate-900 text-lg leading-tight group-hover:text-blue-600 transition-colors mb-4 line-clamp-2">{post.title}</h3>
+                                <div className="p-4 flex-1 flex flex-col">
+                                    <h3 className="font-bold text-slate-900 text-sm leading-tight group-hover:text-blue-600 transition-colors mb-4 line-clamp-2">{post.title}</h3>
 
-                                    <div className="grid grid-cols-3 gap-4 mb-6">
-                                        <div className="flex flex-col items-center gap-1 bg-slate-50 py-2 rounded-xl">
-                                            <Heart size={14} className="text-rose-400" />
-                                            <span className="text-[11px] font-black text-slate-600">{post.likesCount || 0}</span>
+                                    <div className="grid grid-cols-3 gap-2 mb-4">
+                                        <div className="flex flex-col items-center gap-1 bg-slate-50 py-2 rounded-sm border border-slate-100">
+                                            <Heart size={12} className="text-rose-400" />
+                                            <span className="text-[10px] font-black text-slate-600">{post.likesCount || 0}</span>
                                         </div>
-                                        <div className="flex flex-col items-center gap-1 bg-slate-50 py-2 rounded-xl">
-                                            <MessageSquare size={14} className="text-blue-400" />
-                                            <span className="text-[11px] font-black text-slate-600">{post.commentsCount || 0}</span>
+                                        <div className="flex flex-col items-center gap-1 bg-slate-50 py-2 rounded-sm border border-slate-100">
+                                            <MessageSquare size={12} className="text-blue-400" />
+                                            <span className="text-[10px] font-black text-slate-600">{post.commentsCount || 0}</span>
                                         </div>
-                                        <div className="flex flex-col items-center gap-1 bg-slate-50 py-2 rounded-xl">
-                                            <Eye size={14} className="text-slate-400" />
-                                            <span className="text-[11px] font-black text-slate-600">{post.viewCount || 0}</span>
+                                        <div className="flex flex-col items-center gap-1 bg-slate-50 py-2 rounded-sm border border-slate-100">
+                                            <Eye size={12} className="text-slate-400" />
+                                            <span className="text-[10px] font-black text-slate-600">{post.viewCount || 0}</span>
                                         </div>
                                     </div>
 
@@ -166,20 +194,20 @@ export default function BlogDashboard() {
                                     <div className="mt-auto flex items-center gap-2">
                                         <Link
                                             href={`/blog/${post._id}`}
-                                            className="flex-1 flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-2.5 rounded-xl transition-all shadow-sm"
+                                            className="flex-1 flex items-center justify-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-2 rounded-sm transition-all shadow-sm"
                                         >
-                                            <Eye size={14} /> Preview
+                                            <Eye size={12} /> Preview
                                         </Link>
                                         <Link
                                             href={`/blog/${post._id}/edit`}
-                                            className="w-11 h-10 flex items-center justify-center rounded-xl bg-slate-50 border border-slate-100 text-slate-600 hover:text-blue-600 hover:bg-blue-50 hover:border-blue-100 transition-all"
+                                            className="w-8 h-8 flex items-center justify-center rounded-sm bg-slate-50 border border-slate-100 text-slate-600 hover:text-blue-600 hover:bg-blue-50 hover:border-blue-100 transition-all"
                                             title="Edit Story"
                                         >
-                                            <Edit size={16} />
+                                            <Edit size={12} />
                                         </Link>
                                         <button
                                             onClick={() => handleCopyLink(post.slug, post._id)}
-                                            className="w-11 h-10 flex items-center justify-center rounded-xl bg-white border border-slate-100 text-slate-300 hover:text-blue-500 hover:bg-blue-50 hover:border-blue-100 transition-all"
+                                            className="w-8 h-8 flex items-center justify-center rounded-sm bg-white border border-slate-100 text-slate-300 hover:text-blue-500 hover:bg-blue-50 hover:border-blue-100 transition-all"
                                             title="Copy Link"
                                         >
                                             {copyingId === post._id ? <CheckCircleIcon size={16} className="text-emerald-500" /> : <LinkIcon size={16} />}

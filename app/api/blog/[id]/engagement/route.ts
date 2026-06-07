@@ -11,7 +11,13 @@ export async function GET(req: NextRequest, { params }: Params) {
     try {
         const { id } = await params;
         await connectDB();
-        const comments = await Comment.find({ postId: id }).sort({ createdAt: -1 });
+        const post = id.match(/^[0-9a-fA-F]{24}$/)
+            ? await BlogPost.findById(id)
+            : await BlogPost.findOne({ slug: id });
+        
+        if (!post) return NextResponse.json({ error: 'Post not found' }, { status: 404 });
+
+        const comments = await Comment.find({ postId: post._id.toString() }).sort({ createdAt: -1 });
         return NextResponse.json(comments);
     } catch (err: any) {
         return NextResponse.json({ error: err.message }, { status: 500 });
@@ -25,8 +31,13 @@ export async function POST(req: NextRequest, { params }: Params) {
         const { action, authorName, authorEmail, content, parentId } = body;
 
         await connectDB();
-        const post = await BlogPost.findById(id);
+        const post = id.match(/^[0-9a-fA-F]{24}$/)
+            ? await BlogPost.findById(id)
+            : await BlogPost.findOne({ slug: id });
         if (!post) return NextResponse.json({ error: 'Post not found' }, { status: 404 });
+        
+        // Ensure we use the actual _id string from now on
+        const postIdStr = post._id.toString();
 
         if (action === 'like') {
             if (!post.settings.allowLikes) return NextResponse.json({ error: 'Likes disabled' }, { status: 403 });
@@ -37,7 +48,7 @@ export async function POST(req: NextRequest, { params }: Params) {
             await Notification.create({
                 type: 'like',
                 content: `Someone liked your post: ${post.title}`,
-                postId: id
+                postId: postIdStr
             });
 
             return NextResponse.json({ likesCount: post.likesCount });
@@ -47,7 +58,7 @@ export async function POST(req: NextRequest, { params }: Params) {
             if (!post.settings.allowComments) return NextResponse.json({ error: 'Comments disabled' }, { status: 403 });
             
             const comment = await Comment.create({
-                postId: id,
+                postId: postIdStr,
                 parentId: parentId || null,
                 authorName,
                 authorEmail,
@@ -58,7 +69,7 @@ export async function POST(req: NextRequest, { params }: Params) {
             await Notification.create({
                 type: action === 'reply' ? 'reply' : 'comment',
                 content: `${authorName} ${action === 'reply' ? 'replied to a comment' : 'commented'} on: ${post.title}`,
-                postId: id,
+                postId: postIdStr,
                 commentId: comment._id
             });
 

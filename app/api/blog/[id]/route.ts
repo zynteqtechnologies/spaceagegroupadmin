@@ -12,7 +12,9 @@ export async function GET(req: NextRequest, { params }: Params) {
     try {
         const { id } = await params;
         await connectDB();
-        const post = await BlogPost.findById(id);
+        const post = id.match(/^[0-9a-fA-F]{24}$/)
+            ? await BlogPost.findById(id)
+            : await BlogPost.findOne({ slug: id });
         if (!post) return NextResponse.json({ error: 'Post not found' }, { status: 404 });
         return NextResponse.json(post);
     } catch (err: any) {
