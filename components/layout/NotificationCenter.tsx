@@ -98,7 +98,7 @@ export default function NotificationCenter() {
         <div className="relative">
             <button 
                 onClick={() => setIsOpen(!isOpen)}
-                className="w-10 h-10 rounded-full flex items-center justify-center text-slate-500 hover:bg-slate-50 transition-all relative group"
+                className="w-10 h-10 rounded-full flex items-center justify-center text-slate-600 hover:bg-slate-50 transition-all relative group"
             >
                 <Bell size={20} className="group-hover:rotate-12 transition-transform" />
                 {unreadCount > 0 && (
@@ -164,7 +164,7 @@ export default function NotificationCenter() {
                                                 <div className="flex items-center gap-3 mt-2 text-[10px] text-slate-400 font-bold uppercase tracking-wider">
                                                     <span className="flex items-center gap-1">
                                                         <Clock size={10} />
-                                                        {new Date(n.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                        {new Date(n.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} at {new Date(n.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                                     </span>
                                                     {!n.isRead && (
                                                         <span className="w-1.5 h-1.5 bg-blue-500 rounded-full" />

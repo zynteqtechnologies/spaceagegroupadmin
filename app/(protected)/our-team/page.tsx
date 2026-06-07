@@ -139,11 +139,11 @@ export default function OurTeamPage() {
                                     </div>
 
                                     <div className="space-y-2.5 mb-6">
-                                        <div className="flex items-start gap-2.5 text-slate-500">
+                                        <div className="flex items-start gap-2.5 text-slate-600">
                                             <GraduationCap size={16} className="shrink-0 text-slate-400" />
                                             <span className="text-xs line-clamp-1">{member.study}</span>
                                         </div>
-                                        <div className="flex items-start gap-2.5 text-slate-500">
+                                        <div className="flex items-start gap-2.5 text-slate-600">
                                             <Briefcase size={16} className="shrink-0 text-slate-400" />
                                             <span className="text-xs line-clamp-1">{member.experience}</span>
                                         </div>

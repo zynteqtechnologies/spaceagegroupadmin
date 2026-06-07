@@ -47,8 +47,8 @@ export default function CommercialSpecsSection({ project, onUpdate }: Props) {
                 <div className="min-w-[500px]">
                     <div className="grid grid-cols-[auto_1fr_1fr_auto] bg-slate-50 border-b border-slate-100">
                     <div className="w-8" />
-                    <div className="px-4 py-2.5 text-xs font-semibold text-slate-500 uppercase tracking-wide">Field</div>
-                    <div className="px-4 py-2.5 text-xs font-semibold text-slate-500 uppercase tracking-wide">Value</div>
+                    <div className="px-4 py-2.5 text-xs font-semibold text-slate-600 uppercase tracking-wide">Field</div>
+                    <div className="px-4 py-2.5 text-xs font-semibold text-slate-600 uppercase tracking-wide">Value</div>
                     <div className="w-10" />
                 </div>
 

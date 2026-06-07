@@ -75,14 +75,14 @@ export default function HeroImagePage() {
               className={`flex items-center gap-2 px-4 py-2 text-sm font-semibold transition-all
                 ${tab === t.key
                   ? 'bg-slate-900 text-white shadow-sm rounded-sm'
-                  : 'text-slate-500 hover:text-slate-800 bg-[#f9fbfd] rounded-sm border-1 border-gray-200 hover:bg-slate-50'
+                  : 'text-slate-600 hover:text-slate-800 bg-[#f9fbfd] rounded-sm border-1 border-gray-200 hover:bg-slate-50'
                 }`}
             >
               {t.icon}
               {t.label}
               {t.count !== undefined && t.count > 0 && (
                 <span className={`text-[12px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center
-                  ${tab === t.key ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'}`}>
+                  ${tab === t.key ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'}`}>
                   {t.count}
                 </span>
               )}

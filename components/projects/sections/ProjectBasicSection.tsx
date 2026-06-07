@@ -40,7 +40,7 @@ export default function ProjectBasicSection({ project, onUpdate }: Props) {
 
             <div className="space-y-4">
                 <div>
-                    <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5 block">Project Title *</label>
+                    <label className="text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1.5 block">Project Title *</label>
                     <input
                         type="text"
                         value={form.title}
@@ -50,7 +50,7 @@ export default function ProjectBasicSection({ project, onUpdate }: Props) {
                 </div>
 
                 <div>
-                    <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5 block">Headline</label>
+                    <label className="text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1.5 block">Headline</label>
                     <input
                         type="text"
                         placeholder="e.g. Luxury 2 & 3 BHK in Vadodara"
@@ -62,7 +62,7 @@ export default function ProjectBasicSection({ project, onUpdate }: Props) {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                     <div>
-                        <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5 block">Status</label>
+                        <label className="text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1.5 block">Status</label>
                         <select
                             value={form.status}
                             onChange={(e) => setForm(p => ({ ...p, status: e.target.value as ProjectStatus }))}
@@ -75,7 +75,7 @@ export default function ProjectBasicSection({ project, onUpdate }: Props) {
                     </div>
 
                     <div>
-                        <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5 block">Slug (URL)</label>
+                        <label className="text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1.5 block">Slug (URL)</label>
                         <input
                             type="text"
                             value={form.slug}

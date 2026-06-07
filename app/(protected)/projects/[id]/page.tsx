@@ -82,7 +82,7 @@ export default function ProjectAdminPage({ params }: { params: Promise<{ id: str
         return (
             <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
                 <Building2 size={40} className="text-slate-300" />
-                <p className="text-slate-500 font-medium">Project not found</p>
+                <p className="text-slate-600 font-medium">Project not found</p>
                 <Link href="/dashboard/projects" className="text-sm text-indigo-500 hover:underline">← Back to Projects</Link>
             </div>
         );
@@ -142,7 +142,7 @@ export default function ProjectAdminPage({ params }: { params: Promise<{ id: str
                     </div>
                     <span className={`text-xs font-semibold px-3 py-1.5 rounded-full border shrink-0 w-fit
             ${project.status === 'ongoing' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
-                            project.status === 'completed' ? 'bg-slate-100 text-slate-500 border-slate-200' :
+                            project.status === 'completed' ? 'bg-slate-100 text-slate-600 border-slate-200' :
                                 'bg-sky-50 text-sky-600 border-sky-100'}`}
                     >
                         {project.status ?? 'upcoming'}
@@ -163,7 +163,7 @@ export default function ProjectAdminPage({ params }: { params: Promise<{ id: str
                             style={{ width: `${progress.percentage}%` }}
                         />
                     </div>
-                    <p className="text-xs text-slate-500 mb-4 font-medium">
+                    <p className="text-xs text-slate-600 mb-4 font-medium">
                         {progress.completed} out of {progress.total} sections are saved and completed
                     </p>
 
@@ -196,7 +196,7 @@ export default function ProjectAdminPage({ params }: { params: Promise<{ id: str
                             className={`relative flex items-center gap-1.5 pb-3 px-1 text-[13px] font-semibold transition-colors
                                 ${tab === t.key
                                     ? 'text-slate-900'
-                                    : 'text-slate-500 hover:text-slate-800'
+                                    : 'text-slate-600 hover:text-slate-800'
                                 }`}
                         >
                             <span className={`flex items-center justify-center w-[18px] h-[18px] rounded-full text-[9px] font-bold shrink-0 transition-colors

@@ -2,8 +2,8 @@
 'use client';
 import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
-import { 
-    ChevronLeft, Loader2, Calendar, 
+import {
+    ChevronLeft, Loader2, Calendar,
     ImageIcon, Video, FileText, Tag, AlignLeft,
     ExternalLink, CheckCircle, Info, Edit, Youtube
 } from 'lucide-react';
@@ -49,8 +49,8 @@ export default function MediaDetailPage({ params }: { params: Promise<Params> })
                     <Info size={32} />
                 </div>
                 <h1 className="text-xl font-bold text-slate-900 mb-2">Error loading collection</h1>
-                <p className="text-slate-500 mb-6">{error || 'Collection not found'}</p>
-                <button 
+                <p className="text-slate-600 mb-6">{error || 'Collection not found'}</p>
+                <button
                     onClick={() => router.push('/media')}
                     className="inline-flex items-center gap-2 bg-slate-900 text-white px-6 py-2.5 rounded-sm font-semibold text-sm hover:bg-slate-800 transition-all"
                 >
@@ -66,7 +66,7 @@ export default function MediaDetailPage({ params }: { params: Promise<Params> })
         <div className="pb-20">
             {/* ── Header ────────────────────────────────────────────────────── */}
             <div className="bg-white border-b border-slate-100 px-8 py-6 mb-8">
-                <button 
+                <button
                     onClick={() => router.push('/media')}
                     className="flex items-center gap-1.5 text-xs text-slate-400 font-medium hover:text-slate-600 transition-colors mb-4"
                 >
@@ -88,7 +88,7 @@ export default function MediaDetailPage({ params }: { params: Promise<Params> })
                     </div>
 
                     <div className="flex items-center gap-4">
-                        <Link 
+                        <Link
                             href={`/media/${id}/edit`}
                             className="bg-slate-900 text-white px-4 py-2 rounded-sm text-xs font-bold flex items-center gap-2 hover:bg-slate-800 transition-all shadow-sm"
                         >
@@ -103,7 +103,7 @@ export default function MediaDetailPage({ params }: { params: Promise<Params> })
             </div>
 
             {/* ── Assets Grid ────────────────────────────────────────────────── */}
-            <div className="px-8 max-w-7xl mx-auto">
+            <div className="px-8 mx-auto">
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                     {media.items.map((item, idx) => (
                         <div key={idx} className="group bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col">
@@ -135,10 +135,10 @@ export default function MediaDetailPage({ params }: { params: Promise<Params> })
                                     </div>
                                 ) : (
                                     // eslint-disable-next-line @next/next/no-img-element
-                                    <img 
-                                        src={item.url} 
-                                        alt={item.title} 
-                                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" 
+                                    <img
+                                        src={item.url}
+                                        alt={item.title}
+                                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                                     />
                                 )}
 
@@ -158,28 +158,27 @@ export default function MediaDetailPage({ params }: { params: Promise<Params> })
 
                                 {/* MediaType Icon Overlay (Small) */}
                                 <div className="absolute bottom-3 left-3 bg-white/90 backdrop-blur-sm p-1.5 rounded-lg shadow-sm z-10">
-                                    {item.mediaType === 'video' ? <Video size={14} className="text-slate-600" /> : 
-                                     item.mediaType === 'document' ? <FileText size={14} className="text-rose-500" /> : 
-                                     <ImageIcon size={14} className="text-indigo-500" />}
+                                    {item.mediaType === 'video' ? <Video size={14} className="text-slate-600" /> :
+                                        item.mediaType === 'document' ? <FileText size={14} className="text-rose-500" /> :
+                                            <ImageIcon size={14} className="text-indigo-500" />}
                                 </div>
                             </div>
 
                             {/* Info Area */}
                             <div className="p-5 flex-1 flex flex-col">
                                 <div className="flex items-center gap-2 mb-2">
-                                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${
-                                        item.provider === 'youtube' ? 'bg-rose-50 text-rose-600' : 'bg-slate-100 text-slate-600'
-                                    }`}>
+                                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${item.provider === 'youtube' ? 'bg-rose-50 text-rose-600' : 'bg-slate-100 text-slate-600'
+                                        }`}>
                                         <Tag size={10} /> {item.category || 'Asset'}
                                     </span>
                                 </div>
-                                
+
                                 <h3 className="font-bold text-slate-900 text-sm mb-2 line-clamp-1 group-hover:text-indigo-600 transition-colors">
                                     {item.title}
                                 </h3>
 
                                 {item.description ? (
-                                    <p className="text-xs text-slate-500 leading-relaxed line-clamp-2 mb-4 italic">
+                                    <p className="text-xs text-slate-600 leading-relaxed line-clamp-2 mb-4 italic">
                                         &ldquo;{item.description}&rdquo;
                                     </p>
                                 ) : (
@@ -190,9 +189,9 @@ export default function MediaDetailPage({ params }: { params: Promise<Params> })
                                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                                         {item.format?.toUpperCase() || 'FILE'} {item.fileSize ? `• ${(item.fileSize / 1024 / 1024).toFixed(2)} MB` : ''}
                                     </span>
-                                    <a 
-                                        href={item.url} 
-                                        target="_blank" 
+                                    <a
+                                        href={item.url}
+                                        target="_blank"
                                         rel="noopener noreferrer"
                                         className="text-slate-400 hover:text-indigo-600 transition-colors p-1.5 hover:bg-indigo-50 rounded-lg"
                                     >

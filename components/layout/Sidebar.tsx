@@ -42,13 +42,13 @@ export default function Sidebar({ collapsed }: SidebarProps) {
 
   return (
     <aside
-      className={`h-screen bg-[#0f1623] flex flex-col transition-all duration-300 shrink-0 overflow-hidden z-50
+      className={`h-screen bg-slate-900 flex flex-col transition-all duration-300 shrink-0 overflow-hidden z-50
         ${collapsed ? 'w-0 lg:w-16' : 'w-64'}
         ${collapsed ? '-translate-x-full lg:translate-x-0' : 'translate-x-0'}
         fixed lg:relative lg:flex`}
     >
       {/* ── Logo ─────────────────────────────────────────────────────────── */}
-      <div className={`flex items-center border-b border-white/10 transition-all duration-300
+      <div className={`flex items-center border-b border-blue-500/15 transition-all duration-300
         ${collapsed ? 'justify-center px-3 py-4' : 'px-4 py-4'}`}
       >
         {collapsed ? (
@@ -76,7 +76,7 @@ export default function Sidebar({ collapsed }: SidebarProps) {
       {/* ── Nav ──────────────────────────────────────────────────────────── */}
       <nav className="flex-1 overflow-y-auto py-4 space-y-0.5 px-2">
         {!collapsed && (
-          <p className="px-2 mb-2 text-[10px] uppercase tracking-widest text-slate-500 font-semibold">
+          <p className="px-2 mb-2 text-[10px] uppercase tracking-widest text-slate-600 font-semibold">
             Main
           </p>
         )}
@@ -90,8 +90,8 @@ export default function Sidebar({ collapsed }: SidebarProps) {
               title={collapsed ? item.label : undefined}
               className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm transition-all duration-150
                 ${active
-                  ? 'bg-white/5 text-blue-500 font-semibold'
-                  : 'text-slate-400 hover:bg-white/5 hover:text-white'
+                  ? 'bg-blue-500/10 text-blue-500 font-semibold'
+                  : 'text-slate-400 hover:bg-blue-500/10 hover:text-white'
                 }`}
             >
               {/* Active indicator bar */}

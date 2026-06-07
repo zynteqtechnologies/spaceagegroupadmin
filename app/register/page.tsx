@@ -35,10 +35,10 @@ export default function RegisterPage() {
   return (
     <div className="min-h-screen flex flex-col md:flex-row">
       {/* Left side - Branding & Illustration (identical to login) */}
-      <div className="md:w-1/2 bg-gradient-to-br from-[#0c74a8] to-[#60c2d1] text-white flex flex-col justify-center items-center p-8 md:p-12 relative overflow-hidden">
+      <div className="md:w-1/2 bg-gradient-to-br from-[#0c74a8] to-[#60c2d1] text-[#E8DEC0] flex flex-col justify-center items-center p-8 md:p-12 relative overflow-hidden">
         {/* Decorative circles */}
         <div className="absolute top-0 left-0 w-64 h-64 bg-white/10 rounded-full -translate-x-1/2 -translate-y-1/2"></div>
-        <div className="absolute bottom-0 right-0 w-96 h-96 bg-white/5 rounded-full translate-x-1/3 translate-y-1/3"></div>
+        <div className="absolute bottom-0 right-0 w-96 h-96 bg-[#B8A882]/10 rounded-full translate-x-1/3 translate-y-1/3"></div>
 
         <div className="max-w-md text-center md:text-left z-10">
           <h2 className="text-4xl md:text-5xl font-semibold mb-6">Spaceage Group</h2>
@@ -133,7 +133,7 @@ export default function RegisterPage() {
             {/* Register button */}
             <button
               type="submit"
-              className="w-full bg-gradient-to-br from-[#0c74a8] to-[#60c2d1] text-white py-3 px-4 rounded-lg hover:from-[#0a5f8c] hover:to-[#4fa8b8] focus:ring-4 focus:ring-[#0c74a8]/50 transition font-medium"
+              className="w-full bg-gradient-to-br from-[#0c74a8] to-[#60c2d1] text-[#E8DEC0] py-3 px-4 rounded-lg hover:from-[#0a5f8c] hover:to-[#4fa8b8] focus:ring-4 focus:ring-[#0c74a8]/50 transition font-medium"
             >
               Register
             </button>

@@ -67,7 +67,7 @@ export default function MediaGallery({ doc, onUpdate }: MediaGalleryProps) {
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-sm text-xs font-semibold transition-all
                   ${filter === f.key
                     ? 'bg-white text-slate-800 shadow-sm'
-                    : 'text-slate-500 hover:text-slate-700'
+                    : 'text-slate-600 hover:text-slate-700'
                   }`}
               >
                 {f.label}
@@ -135,7 +135,7 @@ export default function MediaGallery({ doc, onUpdate }: MediaGalleryProps) {
               type="button"
               onClick={(e) => { e.stopPropagation(); handleDelete(media); }}
               disabled={deleting === media._id}
-              className="absolute top-2.5 right-2.5 w-8 h-8 bg-white/90 backdrop-blur-sm text-slate-500 rounded-lg items-center justify-center shadow-sm hidden group-hover:flex hover:bg-rose-500 hover:text-white transition-all z-10"
+              className="absolute top-2.5 right-2.5 w-8 h-8 bg-white/90 backdrop-blur-sm text-slate-600 rounded-lg items-center justify-center shadow-sm hidden group-hover:flex hover:bg-rose-500 hover:text-white transition-all z-10"
             >
               <Trash2 size={13} />
             </button>
@@ -154,21 +154,21 @@ export default function MediaGallery({ doc, onUpdate }: MediaGalleryProps) {
 
           {/* Close */}
           <button
-            className="absolute top-5 right-5 w-10 h-10 bg-white/10 hover:bg-white/20 rounded-xl flex items-center justify-center text-white transition-colors z-20 border border-white/10"
+            className="absolute top-5 right-5 w-10 h-10 bg-white/10 hover:bg-white/20 rounded-xl flex items-center justify-center text-white transition-colors z-20 border border-blue-500/15"
             onClick={() => setLightboxIndex(null)}
           >
             <X size={18} />
           </button>
 
           {/* Counter pill */}
-          <div className="absolute top-5 left-1/2 -translate-x-1/2 bg-white/10 border border-white/10 text-white/60 text-xs font-semibold px-3 py-1.5 rounded-full z-20">
+          <div className="absolute top-5 left-1/2 -translate-x-1/2 bg-white/10 border border-blue-500/15 text-white/60 text-xs font-semibold px-3 py-1.5 rounded-full z-20">
             {lightboxIndex + 1} / {filtered.length}
           </div>
 
           {/* Prev */}
           {lightboxIndex > 0 && (
             <button
-              className="absolute left-5 top-1/2 -translate-y-1/2 w-11 h-11 bg-white/10 hover:bg-white/20 rounded-xl flex items-center justify-center text-white transition-all hover:scale-105 z-20 border border-white/10"
+              className="absolute left-5 top-1/2 -translate-y-1/2 w-11 h-11 bg-white/10 hover:bg-white/20 rounded-xl flex items-center justify-center text-white transition-all hover:scale-105 z-20 border border-blue-500/15"
               onClick={(e) => { e.stopPropagation(); setLightboxIndex(lightboxIndex - 1); }}
             >
               <ChevronLeft size={22} />
@@ -187,7 +187,7 @@ export default function MediaGallery({ doc, onUpdate }: MediaGalleryProps) {
                 className="max-h-[80vh] max-w-full rounded-2xl shadow-2xl"
               />
             ) : current.mediaType === 'document' ? (
-              <div className="flex flex-col items-center gap-6 bg-white/5 p-12 rounded-3xl border border-white/10 backdrop-blur-xl">
+              <div className="flex flex-col items-center gap-6 bg-blue-500/10 p-12 rounded-3xl border border-blue-500/15 backdrop-blur-xl">
                 <div className="w-24 h-24 rounded-2xl bg-rose-500/20 flex items-center justify-center">
                   <FileText size={48} className="text-rose-500" />
                 </div>
@@ -218,7 +218,7 @@ export default function MediaGallery({ doc, onUpdate }: MediaGalleryProps) {
           {/* Next */}
           {lightboxIndex < filtered.length - 1 && (
             <button
-              className="absolute right-5 top-1/2 -translate-y-1/2 w-11 h-11 bg-white/10 hover:bg-white/20 rounded-xl flex items-center justify-center text-white transition-all hover:scale-105 z-20 border border-white/10"
+              className="absolute right-5 top-1/2 -translate-y-1/2 w-11 h-11 bg-white/10 hover:bg-white/20 rounded-xl flex items-center justify-center text-white transition-all hover:scale-105 z-20 border border-blue-500/15"
               onClick={(e) => { e.stopPropagation(); setLightboxIndex(lightboxIndex + 1); }}
             >
               <ChevronRight size={22} />

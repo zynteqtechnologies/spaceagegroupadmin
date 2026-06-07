@@ -266,7 +266,7 @@ export default function MediaUploader({ existingDoc, onSuccess }: MediaUploaderP
                         }`}>
                         <Star size={14} className={preview.isMainImage ? 'text-white fill-white' : 'text-slate-300 group-hover/star:text-amber-300'} />
                       </div>
-                      <span className="text-xs font-medium text-slate-500 whitespace-nowrap">Main</span>
+                      <span className="text-xs font-medium text-slate-600 whitespace-nowrap">Main</span>
                     </button>
                   </div>
                 </div>

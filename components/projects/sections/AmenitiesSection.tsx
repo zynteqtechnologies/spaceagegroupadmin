@@ -69,7 +69,7 @@ export default function AmenitiesSection({ project, onUpdate }: Props) {
 
                 {/* Quick add presets */}
                 <div>
-                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Quick Add</p>
+                    <p className="text-xs font-semibold text-slate-600 uppercase tracking-wide mb-2">Quick Add</p>
                     <div className="flex flex-wrap gap-2">
                         {PRESETS.map((preset) => {
                             const added = items.some(i => i.name.toLowerCase() === preset.name.toLowerCase());
@@ -98,9 +98,9 @@ export default function AmenitiesSection({ project, onUpdate }: Props) {
                 <div className="border border-slate-100 rounded-xl overflow-x-auto">
                     <div className="min-w-[500px]">
                         <div className="grid grid-cols-[2fr_1fr_1fr_auto] bg-slate-50 border-b border-slate-100">
-                            <div className="px-4 py-2.5 text-xs font-semibold text-slate-500 uppercase tracking-wide">Amenity Name</div>
-                            <div className="px-4 py-2.5 text-xs font-semibold text-slate-500 uppercase tracking-wide">Icon</div>
-                            <div className="px-4 py-2.5 text-xs font-semibold text-slate-500 uppercase tracking-wide">Category</div>
+                            <div className="px-4 py-2.5 text-xs font-semibold text-slate-600 uppercase tracking-wide">Amenity Name</div>
+                            <div className="px-4 py-2.5 text-xs font-semibold text-slate-600 uppercase tracking-wide">Icon</div>
+                            <div className="px-4 py-2.5 text-xs font-semibold text-slate-600 uppercase tracking-wide">Category</div>
                             <div className="w-10" />
                         </div>
 
@@ -179,7 +179,7 @@ export default function AmenitiesSection({ project, onUpdate }: Props) {
             {/* Live preview */}
             {items.length > 0 && (
                 <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
-                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">Preview</p>
+                    <p className="text-xs font-semibold text-slate-600 uppercase tracking-wide mb-3">Preview</p>
                     <div className="flex flex-wrap gap-2">
                         {items.map((item, i) => (
                             <span key={i} className="flex items-center gap-1.5 bg-slate-50 border border-slate-100 text-slate-700 text-xs font-medium px-3 py-1.5 rounded-lg">

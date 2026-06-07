@@ -106,7 +106,7 @@ export default function BlogDashboard() {
             </div>
 
             {/* ── Content ────────────────────────────────────────────────────── */}
-            <div className="px-4 lg:px-8 py-8 max-w-7xl mx-auto">
+            <div className="px-4 lg:px-8 py-8 mx-auto">
                 {filteredPosts.length === 0 ? (
                     <div className="bg-white border border-slate-100 rounded-2xl p-16 text-center shadow-sm">
                         <div className="w-20 h-20 rounded-full bg-slate-50 flex items-center justify-center mx-auto mb-6 text-slate-300">
@@ -131,8 +131,8 @@ export default function BlogDashboard() {
                                     />
                                     <div className="absolute top-3 left-3 flex gap-2">
                                         <div className={`py-1 px-3 rounded-full text-[10px] font-black uppercase tracking-widest backdrop-blur-md shadow-sm flex items-center gap-1.5 ${post.status === 'published'
-                                                ? 'bg-emerald-500/90 text-white'
-                                                : 'bg-slate-900/90 text-white'
+                                            ? 'bg-emerald-500/90 text-white'
+                                            : 'bg-slate-900/90 text-white'
                                             }`}>
                                             {post.status === 'published' ? <Globe size={10} /> : <Lock size={10} />}
                                             {post.status}

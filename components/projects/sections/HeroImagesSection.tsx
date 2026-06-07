@@ -230,7 +230,7 @@ export default function HeroImagesSection({ project, onUpdate }: Props) {
                                             ${p.isMainImage ? 'bg-amber-400 border-amber-400 shadow-md shadow-amber-100' : 'border-slate-200 bg-white group-hover/star:border-amber-300'}`}>
                                             <Star size={13} className={p.isMainImage ? 'text-white fill-white' : 'text-slate-300 group-hover/star:text-amber-300'} />
                                         </div>
-                                        <span className="text-xs text-slate-500 font-medium">Set as Main Image</span>
+                                        <span className="text-xs text-slate-600 font-medium">Set as Main Image</span>
                                     </button>
                                 </div>
                             </div>

@@ -170,7 +170,7 @@ export default function NewUserPage() {
                         </div>
                         <div>
                             <h4 className="text-sm font-bold text-slate-800">Note on Access</h4>
-                            <p className="text-xs text-slate-500 leading-relaxed mt-1">
+                            <p className="text-xs text-slate-600 leading-relaxed mt-1">
                                 Administrators have full access to all dashboard features including user management. Ensure that the email provided is valid for potential password resets.
                             </p>
                         </div>

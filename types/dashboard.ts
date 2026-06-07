@@ -1,6 +1,6 @@
 import { ProjectDoc } from './project';
 
-interface RecentBlogPost {
+export interface RecentBlogPost {
     _id: string;
     title: string;
     category: string;
@@ -10,15 +10,36 @@ interface RecentBlogPost {
     updatedAt: string;
 }
 
+export interface ActivityNotification {
+    _id: string;
+    type: string;
+    content: string;
+    isRead: boolean;
+    createdAt: string;
+    postId?: string;
+    userId?: { _id: string; name: string; avatar?: string };
+}
+
 export interface DashboardStats {
   counts: {
     projects: number;
     blogPosts: number;
     teamMembers: number;
     mediaCollections: number;
-    users?: number; // Only for administrators
+    totalMediaSize: number;
   };
-  recentProjects: ProjectDoc[];
-  recentBlogPosts: RecentBlogPost[];
+  projectBreakdown: {
+    upcoming: number;
+    ongoing: number;
+    completed: number;
+  };
+  blogBreakdown: {
+    published: number;
+    draft: number;
+  };
+  recentActivities: ActivityNotification[];
+  needsAttention: {
+    draftBlogs: RecentBlogPost[];
+    projectsMissingHeroes: ProjectDoc[];
+  };
 }
-

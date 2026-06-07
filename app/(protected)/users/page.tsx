@@ -104,7 +104,7 @@ export default function UsersPage() {
             </div>
 
             {/* ── Content ────────────────────────────────────────────────────── */}
-            <div className="px-4 lg:px-8 py-8 max-w-7xl mx-auto">
+            <div className="px-4 lg:px-8 py-8 mx-auto">
                 {filteredUsers.length === 0 ? (
                     <div className="bg-white border border-slate-100 rounded-2xl p-16 text-center shadow-sm">
                         <div className="w-20 h-20 rounded-full bg-slate-50 flex items-center justify-center mx-auto mb-6">

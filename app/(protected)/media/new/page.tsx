@@ -245,7 +245,7 @@ export default function NewMediaPage() {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-1.5">
-                            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Select Project *</label>
+                            <label className="text-xs font-semibold text-slate-600 uppercase tracking-wide">Select Project *</label>
                             <div className="relative">
                                 {loadingProjects ? (
                                     <div className="w-full border border-slate-200 rounded-lg px-4 py-2.5 bg-slate-50 flex items-center gap-2 text-slate-400 text-sm">
@@ -268,7 +268,7 @@ export default function NewMediaPage() {
                         </div>
 
                         <div className="space-y-1.5">
-                            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Collection Title *</label>
+                            <label className="text-xs font-semibold text-slate-600 uppercase tracking-wide">Collection Title *</label>
                             <input
                                 type="text"
                                 placeholder="e.g. Marketing Brochure & Site Photos"
@@ -370,7 +370,7 @@ export default function NewMediaPage() {
                             <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
                                 <div className="flex items-center gap-2 mb-3">
                                     <Youtube className="text-rose-500" size={16} />
-                                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Connect YouTube Video</p>
+                                    <p className="text-[10px] font-bold text-slate-600 uppercase tracking-widest">Connect YouTube Video</p>
                                 </div>
                                 <div className="flex gap-2">
                                     <div className="relative flex-1">
@@ -398,7 +398,7 @@ export default function NewMediaPage() {
                 {/* ── Section 4: Items Management ──────────────────────────────── */}
                 {newItems.length > 0 && (
                     <section className="space-y-4">
-                        <h2 className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2 ml-1">
+                        <h2 className="text-xs font-bold text-slate-600 uppercase tracking-widest flex items-center gap-2 ml-1">
                             Recently Added Assets ({newItems.length})
                         </h2>
                         <div className="grid grid-cols-1 gap-4">

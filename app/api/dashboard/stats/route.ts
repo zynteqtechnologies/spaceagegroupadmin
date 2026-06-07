@@ -5,8 +5,8 @@ import Project from '@/models/Project';
 import BlogPost from '@/models/BlogPost';
 import TeamMember from '@/models/TeamMember';
 import Media from '@/models/Media';
-import User from '@/models/User';
-import { getCurrentUser, isAdministrator } from '@/lib/authUtils';
+import Notification from '@/models/Notification';
+import { getCurrentUser } from '@/lib/authUtils';
 
 export async function GET(req: NextRequest) {
     try {
@@ -16,28 +16,50 @@ export async function GET(req: NextRequest) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const isAdmin = isAdministrator(user);
-
-        // Fetch counts in parallel
+        // Fetch standard counts
         const [
             projectsCount,
             blogPostsCount,
             teamMembersCount,
             mediaCollectionsCount,
-            usersCount
         ] = await Promise.all([
             Project.countDocuments(),
             BlogPost.countDocuments(),
             TeamMember.countDocuments(),
             Media.countDocuments(),
-            isAdmin ? User.countDocuments() : Promise.resolve(undefined)
         ]);
 
-        // Fetch recent items
-        const [recentProjects, recentBlogPosts] = await Promise.all([
-            Project.find().sort({ createdAt: -1 }).limit(5).lean(),
-            BlogPost.find().sort({ createdAt: -1 }).limit(5).lean()
+        // Fetch Breakdowns
+        const [
+            projectsUpcoming,
+            projectsOngoing,
+            projectsCompleted,
+            blogsPublished,
+            blogsDraft,
+        ] = await Promise.all([
+            Project.countDocuments({ status: 'upcoming' }),
+            Project.countDocuments({ status: 'ongoing' }),
+            Project.countDocuments({ status: 'completed' }),
+            BlogPost.countDocuments({ status: 'published' }),
+            BlogPost.countDocuments({ status: 'draft' }),
         ]);
+
+        // Fetch Activities, Needs Attention & Media Size
+        const [recentActivities, draftBlogs, projectsMissingHeroes, mediaSizeResult] = await Promise.all([
+            Notification.find({ type: 'manager_action' })
+                .sort({ createdAt: -1 })
+                .limit(50)
+                .populate('userId', 'name')
+                .lean(),
+            BlogPost.find({ status: 'draft' }).sort({ updatedAt: -1 }).limit(5).lean(),
+            Project.find({ 'heroImages.0': { $exists: false } }).sort({ updatedAt: -1 }).limit(5).lean(),
+            Media.aggregate([
+                { $unwind: "$items" },
+                { $group: { _id: null, totalSize: { $sum: "$items.fileSize" } } }
+            ])
+        ]);
+
+        const totalMediaSize = mediaSizeResult[0]?.totalSize || 0;
 
         return NextResponse.json({
             counts: {
@@ -45,10 +67,22 @@ export async function GET(req: NextRequest) {
                 blogPosts: blogPostsCount,
                 teamMembers: teamMembersCount,
                 mediaCollections: mediaCollectionsCount,
-                users: usersCount
+                totalMediaSize,
             },
-            recentProjects,
-            recentBlogPosts
+            projectBreakdown: {
+                upcoming: projectsUpcoming,
+                ongoing: projectsOngoing,
+                completed: projectsCompleted,
+            },
+            blogBreakdown: {
+                published: blogsPublished,
+                draft: blogsDraft,
+            },
+            recentActivities,
+            needsAttention: {
+                draftBlogs,
+                projectsMissingHeroes
+            }
         });
     } catch (error: any) {
         console.error('Dashboard stats API error:', error);

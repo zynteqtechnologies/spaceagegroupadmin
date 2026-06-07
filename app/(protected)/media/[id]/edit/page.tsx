@@ -156,7 +156,7 @@ export default function EditMediaPage({ params }: { params: Promise<{ id: string
                                 placeholder="Paste YouTube link (e.g. https://youtube.com/watch?v=...)"
                                 value={youtubeUrl}
                                 onChange={(e) => setYoutubeUrl(e.target.value)}
-                                className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-sm text-white outline-none focus:border-rose-500 transition-all font-medium placeholder:text-slate-600"
+                                className="w-full bg-blue-500/10 border border-blue-500/15 rounded-xl pl-10 pr-4 py-3 text-sm text-white outline-none focus:border-rose-500 transition-all font-medium placeholder:text-slate-600"
                             />
                             <LinkIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-600" size={16} />
                         </div>

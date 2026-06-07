@@ -84,7 +84,7 @@ export default function VirtualTourSection({ project, onUpdate }: Props) {
 
                 {/* Type selector */}
                 <div>
-                    <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2 block">Tour Type</label>
+                    <label className="text-xs font-semibold text-slate-600 uppercase tracking-wide mb-2 block">Tour Type</label>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                         {TOUR_TYPES.map((t) => (
                             <button
@@ -94,7 +94,7 @@ export default function VirtualTourSection({ project, onUpdate }: Props) {
                                 className={`px-3 py-2 rounded-xl text-xs font-semibold border transition-all
                   ${form.type === t.value
                                         ? 'bg-slate-900 text-white border-slate-900'
-                                        : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300'
+                                        : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
                                     }`}
                             >
                                 {t.label}
@@ -108,7 +108,7 @@ export default function VirtualTourSection({ project, onUpdate }: Props) {
 
                 {/* Embed URL */}
                 <div>
-                    <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5 block">
+                    <label className="text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1.5 block">
                         {form.type === 'youtube' ? 'YouTube URL or Embed URL' : 'Embed URL'}
                     </label>
                     <input
@@ -122,7 +122,7 @@ export default function VirtualTourSection({ project, onUpdate }: Props) {
 
                 {/* Description */}
                 <div>
-                    <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5 block">Description (optional)</label>
+                    <label className="text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1.5 block">Description (optional)</label>
                     <textarea
                         placeholder="Brief description of the virtual tour…"
                         value={form.description ?? ''}
@@ -161,7 +161,7 @@ export default function VirtualTourSection({ project, onUpdate }: Props) {
                                 href={existing.embedUrl}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="flex items-center gap-2 text-sm text-slate-500 bg-slate-50 hover:bg-slate-100 font-semibold px-4 py-2.5 rounded-xl transition-all border border-slate-200"
+                                className="flex items-center gap-2 text-sm text-slate-600 bg-slate-50 hover:bg-slate-100 font-semibold px-4 py-2.5 rounded-xl transition-all border border-slate-200"
                             >
                                 <ExternalLink size={13} /> Open
                             </a>
@@ -200,7 +200,7 @@ export default function VirtualTourSection({ project, onUpdate }: Props) {
             {/* Current tour info */}
             {existing?.embedUrl && !preview && (
                 <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
-                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Current Tour</p>
+                    <p className="text-xs font-semibold text-slate-600 uppercase tracking-wide mb-2">Current Tour</p>
                     <div className="flex items-start gap-3">
                         <div className="w-10 h-10 bg-violet-50 border border-violet-100 rounded-xl flex items-center justify-center shrink-0">
                             <Play size={16} className="text-violet-500" />
@@ -208,7 +208,7 @@ export default function VirtualTourSection({ project, onUpdate }: Props) {
                         <div>
                             <p className="text-xs font-semibold text-slate-600 capitalize">{existing.type ?? 'Virtual Tour'}</p>
                             <p className="text-xs text-slate-400 font-mono mt-0.5 truncate max-w-sm">{existing.embedUrl}</p>
-                            {existing.description && <p className="text-xs text-slate-500 mt-1">{existing.description}</p>}
+                            {existing.description && <p className="text-xs text-slate-600 mt-1">{existing.description}</p>}
                         </div>
                     </div>
                 </div>

@@ -165,7 +165,7 @@ export default function BlogPreviewPage({ params }: { params: Promise<{ id: stri
 
                     <div className="flex justify-center items-center gap-6">
                         <div className="flex items-center gap-2">
-                            <div className="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center text-slate-500 font-bold">
+                            <div className="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center text-slate-600 font-bold">
                                 SA
                             </div>
                             <div className="text-left">
@@ -197,7 +197,7 @@ export default function BlogPreviewPage({ params }: { params: Promise<{ id: stri
                     <div className="flex flex-wrap items-center gap-2 mb-16 pb-16 border-b border-slate-200">
                         <Tag size={16} className="text-slate-300 mr-2" />
                         {post.tags.map((tag: string) => (
-                            <span key={tag} className="px-3 py-1 bg-white border border-slate-100 rounded-lg text-xs font-bold text-slate-500 hover:text-blue-600 hover:border-blue-100 transition-all cursor-default">
+                            <span key={tag} className="px-3 py-1 bg-white border border-slate-100 rounded-lg text-xs font-bold text-slate-600 hover:text-blue-600 hover:border-blue-100 transition-all cursor-default">
                                 #{tag}
                             </span>
                         ))}
