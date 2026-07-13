@@ -17,6 +17,8 @@ export interface ITeamMember extends Document {
         instagram?: string;
         facebook?: string;
     };
+    taglineThought?: string;
+    skills?: string[];
     order: number;
     createdAt: Date;
     updatedAt: Date;
@@ -38,6 +40,8 @@ const TeamMemberSchema = new Schema<ITeamMember>({
         instagram: { type: String, default: '' },
         facebook: { type: String, default: '' },
     },
+    taglineThought: { type: String, default: '' },
+    skills: { type: [String], default: [] },
     order: { type: Number, default: 0 },
 }, { 
     timestamps: true 

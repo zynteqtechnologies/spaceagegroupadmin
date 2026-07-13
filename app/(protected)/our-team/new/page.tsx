@@ -25,6 +25,8 @@ export default function NewTeamMemberPage() {
         linkedin: '',
         instagram: '',
         facebook: '',
+        taglineThought: '',
+        skills: '',
         order: '0',
     });
     const [imageFile, setImageFile] = useState<File | null>(null);
@@ -215,6 +217,30 @@ export default function NewTeamMemberPage() {
                                 placeholder="e.g. Lead Designer since 2018"
                                 className="w-full border border-slate-200 rounded-sm px-4 py-2 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-50 transition-all bg-white"
                             />
+                        </div>
+
+                        {/* Tagline Thought & Skills */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-slate-100">
+                            <div className="space-y-1">
+                                <label className="text-xs font-semibold text-slate-600 uppercase tracking-wide block">Tagline / Thought</label>
+                                <input
+                                    type="text"
+                                    value={formData.taglineThought}
+                                    onChange={(e) => setFormData({ ...formData, taglineThought: e.target.value })}
+                                    placeholder="e.g. Quality is not just a standard..."
+                                    className="w-full border border-slate-200 rounded-sm px-4 py-2 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-50 transition-all bg-white"
+                                />
+                            </div>
+                            <div className="space-y-1">
+                                <label className="text-xs font-semibold text-slate-600 uppercase tracking-wide block">Top 3 Skills</label>
+                                <input
+                                    type="text"
+                                    value={formData.skills}
+                                    onChange={(e) => setFormData({ ...formData, skills: e.target.value })}
+                                    placeholder="e.g. Valuation, Arbitration, Civil Design (comma-separated)"
+                                    className="w-full border border-slate-200 rounded-sm px-4 py-2 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-50 transition-all bg-white"
+                                />
+                            </div>
                         </div>
 
                         {/* Social Links */}

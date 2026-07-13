@@ -48,6 +48,9 @@ export async function POST(req: NextRequest) {
         // Cloudinary folder structure: media/[project.title]/uploads
         const folderName = `media/${project.title}/uploads`;
 
+        // Find detail blocks matching actual file indices (excluding youtube)
+        const fileDetails = newDetails.filter((d: any) => d.provider !== 'youtube');
+
         const newItems = await Promise.all(
             files.map(async (file, i) => {
                 const buffer = Buffer.from(await file.arrayBuffer());
@@ -55,7 +58,7 @@ export async function POST(req: NextRequest) {
                 const isPdf = file.type === 'application/pdf';
                 const result = await uploadBuffer(buffer, file.type, folderName);
 
-                const detail = newDetails[i] || {};
+                const detail = fileDetails[i] || {};
 
                 return {
                     url: result.secure_url,
@@ -69,17 +72,33 @@ export async function POST(req: NextRequest) {
                     format: isVideo ? (file.type.split('/')[1] ?? 'mp4') : isPdf ? 'pdf' : 'webp',
                     fileSize: result.bytes,
                     duration: result.duration ?? null,
-                    thumbnail: isVideo ? result.secure_url.replace(/\.[^/.]+$/, '.jpg') 
+                    thumbnail: detail.thumbnail || (isVideo ? result.secure_url.replace(/\.[^/.]+$/, '.jpg') 
                              : isPdf ? 'https://res.cloudinary.com/demo/image/upload/v1/pdf_logo.png' // Placeholder or generated
-                             : null,
+                             : null),
+                    subCategory: detail.subCategory || null,
                 };
             })
         );
 
+        const youtubeItems = newDetails
+            .filter((d: any) => d.provider === 'youtube' && d.url)
+            .map((detail: any) => ({
+                url: detail.url,
+                title: detail.title || 'YouTube Video',
+                alt: detail.alt || '',
+                description: detail.description || '',
+                category: 'video',
+                mediaType: 'video',
+                isInProjects: false,
+                provider: 'youtube',
+                thumbnail: detail.thumbnail || null,
+                subCategory: detail.subCategory || null,
+            }));
+
         const media = await Media.create({
             project: projectId,
             title,
-            items: [...existingItems, ...newItems] as any,
+            items: [...existingItems, ...newItems, ...youtubeItems] as any,
         });
 
         // ── Privileged Action Notification ──────────────────────────────

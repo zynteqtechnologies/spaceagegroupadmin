@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
         const filter = status ? { status } : {};
 
         const projects = await Project.find(filter)
-            .select('_id title slug status headline heroImages createdAt updatedAt')
+            .select('_id title slug status headline address estYear featured category area units heroImages createdAt updatedAt')
             .sort({ createdAt: -1 })
             .lean();
 
@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
         await connectDB();
 
         const body = await req.json();
-        const { title, slug, status, headline, shortIntro } = body;
+        const { title, slug, status, headline, shortIntro, address, estYear, featured, category, area, units } = body;
 
         if (!title?.trim()) {
             return NextResponse.json({ error: 'Title is required' }, { status: 400 });
@@ -60,6 +60,12 @@ export async function POST(req: NextRequest) {
             status: status ?? 'upcoming',
             headline: headline?.trim() ?? '',
             shortIntro: shortIntro?.trim() ?? '',
+            address: address?.trim() ?? '',
+            estYear: estYear?.trim() ?? '',
+            featured: !!featured,
+            category: category?.trim() ?? '',
+            area: area?.trim() ?? '',
+            units: units ? Number(units) : 0,
         });
 
         // ── Privileged Action Notification ──────────────────────────────

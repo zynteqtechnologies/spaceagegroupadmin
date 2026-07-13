@@ -2,9 +2,10 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useState, useEffect } from 'react';
 import {
   LayoutDashboard, ImageIcon, FolderKanban,
-  FileText, Users, ChevronRight, User2, Aperture
+  FileText, Users, ChevronRight, User2, Aperture, Settings, Milestone, Info, Sparkles
 } from 'lucide-react';
 
 type NavItem = {
@@ -21,8 +22,18 @@ const mainNav: NavItem[] = [
   { label: 'Projects', icon: <FolderKanban size={18} />, href: '/projects', children: [] },
   { label: 'Media', icon: <Aperture size={18} />, href: '/media' },
   { label: 'Blog', icon: <FileText size={18} />, href: '/blog' },
+  { label: 'CSR Posts', icon: <Sparkles size={18} />, href: '/csr' },
   { label: 'Our Team', icon: <Users size={18} />, href: '/our-team' },
   { label: 'Users', icon: <User2 size={18} />, href: '/users' },
+  {
+    label: 'About',
+    icon: <Info size={18} />,
+    href: '#',
+    children: [
+      { label: 'Website Counter', icon: <Settings size={16} />, href: '/settings' },
+      { label: 'Our Journey', icon: <Milestone size={16} />, href: '/our-journey' },
+    ]
+  }
 ];
 
 interface SidebarProps {
@@ -31,6 +42,11 @@ interface SidebarProps {
 
 export default function Sidebar({ collapsed }: SidebarProps) {
   const pathname = usePathname();
+  const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({});
+
+  const toggleMenu = (label: string) => {
+    setOpenMenus(prev => ({ ...prev, [label]: !prev[label] }));
+  };
 
   // Highlight the most specific matching route
   const isActive = (href: string) => {
@@ -38,6 +54,14 @@ export default function Sidebar({ collapsed }: SidebarProps) {
       return pathname === '/dashboard';
     }
     return pathname === href || pathname.startsWith(href + '/');
+  };
+
+  const isParentActive = (item: NavItem) => {
+    if (isActive(item.href)) return true;
+    if (item.children) {
+      return item.children.some(child => isActive(child.href));
+    }
+    return false;
   };
 
   return (
@@ -82,6 +106,63 @@ export default function Sidebar({ collapsed }: SidebarProps) {
         )}
 
         {mainNav.map((item) => {
+          const hasChildren = item.children && item.children.length > 0;
+          const parentActive = isParentActive(item);
+          const isOpen = openMenus[item.label] || (hasChildren && parentActive);
+
+          if (hasChildren) {
+            return (
+              <div key={item.label} className="space-y-1">
+                <button
+                  onClick={() => toggleMenu(item.label)}
+                  title={collapsed ? item.label : undefined}
+                  className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm transition-all duration-150 cursor-pointer
+                    ${parentActive
+                      ? 'bg-blue-500/10 text-blue-500 font-semibold'
+                      : 'text-slate-400 hover:bg-blue-500/10 hover:text-white'
+                    }`}
+                >
+                  <span className={`absolute left-0 w-1 h-7 rounded-r-full bg-blue-500 transition-all duration-200
+                    ${parentActive ? 'opacity-100' : 'opacity-0'}`}
+                  />
+                  <span className={`shrink-0 transition-colors ${parentActive ? 'text-blue-500' : ''}`}>
+                    {item.icon}
+                  </span>
+                  {!collapsed && (
+                    <>
+                      <span className="flex-1 text-left truncate">{item.label}</span>
+                      <ChevronRight
+                        size={14}
+                        className={`text-slate-600 shrink-0 transition-transform duration-200 ${isOpen ? 'rotate-90' : ''}`}
+                      />
+                    </>
+                  )}
+                </button>
+                {isOpen && !collapsed && (
+                  <div className="pl-4 ml-6 border-l border-slate-800 space-y-1">
+                    {item.children?.map((child) => {
+                      const childActive = isActive(child.href);
+                      return (
+                        <Link
+                          key={child.label}
+                          href={child.href}
+                          className={`flex items-center gap-2.5 py-2 px-3 text-xs rounded-md transition-all duration-150
+                            ${childActive
+                              ? 'text-blue-500 font-semibold bg-blue-500/5'
+                              : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                            }`}
+                        >
+                          {child.icon && <span className="shrink-0">{child.icon}</span>}
+                          <span>{child.label}</span>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          }
+
           const active = isActive(item.href);
           return (
             <Link
@@ -115,10 +196,6 @@ export default function Sidebar({ collapsed }: SidebarProps) {
                       }`}>
                       {item.badge}
                     </span>
-                  )}
-
-                  {item.children && (
-                    <ChevronRight size={14} className="text-slate-600 shrink-0" />
                   )}
                 </>
               )}

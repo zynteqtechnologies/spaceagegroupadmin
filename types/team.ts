@@ -17,6 +17,8 @@ export interface TeamMember {
         instagram?: string;
         facebook?: string;
     };
+    taglineThought?: string;
+    skills?: string[];
     order: number;
     createdAt?: string;
     updatedAt?: string;

@@ -2,9 +2,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import Notification from '@/models/Notification';
+import BlogPost from '@/models/BlogPost';
+import User from '@/models/User';
 
 export async function GET() {
     try {
+        // Reference models to prevent compiler optimization from stripping unused imports
+        const _registeredModels = [BlogPost, User];
+
         await connectDB();
         const notifications = await Notification.find()
             .populate('postId', 'title')

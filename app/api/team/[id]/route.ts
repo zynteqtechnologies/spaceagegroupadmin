@@ -31,13 +31,19 @@ export async function PATCH(req: NextRequest, { params }: Params) {
         if (!member) return NextResponse.json({ error: 'Member not found' }, { status: 404 });
 
         // Update basic fields
-        const fields = ['name', 'position', 'study', 'experience', 'description', 'relationToGroup', 'order'];
+        const fields = ['name', 'position', 'study', 'experience', 'description', 'relationToGroup', 'order', 'taglineThought'];
         fields.forEach(field => {
             const val = formData.get(field);
             if (val !== null) {
                 (member as any)[field] = field === 'order' ? parseInt(val as string) : val;
             }
         });
+
+        // Update skills array
+        const skillsVal = formData.get('skills');
+        if (skillsVal !== null) {
+            member.skills = String(skillsVal).split(',').map(s => s.trim()).filter(Boolean);
+        }
 
         // Update social links
         const socialFields = ['linkedin', 'instagram', 'facebook'];

@@ -23,8 +23,4 @@ const NotificationSchema = new Schema<INotification>(
     { timestamps: true }
 );
 
-if (mongoose.models.Notification) {
-    delete (mongoose.models as any).Notification;
-}
-
-export default mongoose.model<INotification>('Notification', NotificationSchema);
+export default mongoose.models.Notification || mongoose.model<INotification>('Notification', NotificationSchema);

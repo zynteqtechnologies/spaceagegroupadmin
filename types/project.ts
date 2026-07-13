@@ -24,6 +24,7 @@ export interface MediaItem {
     isInProjects?: boolean;
     provider?: 'cloudinary' | 'youtube' | 'vimeo' | 'none';
     markedForDeletion?: boolean;
+    subCategory?: string;
 }
 
 export interface NewMediaDetail {
@@ -146,6 +147,12 @@ export interface ProjectDoc {
     slug: string;
     status?: ProjectStatus;
     headline?: string;
+    address?: string;
+    estYear?: string;
+    featured?: boolean;
+    category?: string;
+    area?: string;
+    units?: number;
 
     heroImages: MediaItem[];
     shortIntro?: string;
@@ -171,6 +178,12 @@ export interface CreateProjectPayload {
     status?: ProjectStatus;
     headline?: string;
     shortIntro?: string;
+    address?: string;
+    estYear?: string;
+    featured?: boolean;
+    category?: string;
+    area?: string;
+    units?: number;
 }
 
 export interface UpdateProjectBasicPayload extends Partial<CreateProjectPayload> {

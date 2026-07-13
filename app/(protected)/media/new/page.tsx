@@ -22,6 +22,8 @@ interface NewItemPreview {
     order: number;
     mediaType: 'image' | 'video' | 'document';
     provider: 'cloudinary' | 'youtube';
+    thumbnail?: string;
+    subCategory?: string;
 }
 
 interface SelectableMedia extends MediaItem {
@@ -187,7 +189,9 @@ export default function NewMediaPage() {
                 isMainImage: p.isMainImage,
                 order: p.order,
                 provider: p.provider,
-                url: p.provider === 'youtube' ? p.externalUrl : undefined
+                url: p.provider === 'youtube' ? p.externalUrl : undefined,
+                thumbnail: p.thumbnail,
+                subCategory: p.subCategory
             }));
 
             await createMedia(selectedProjectId, title, existingToSave, filesToUpload, newDetails);
@@ -424,53 +428,111 @@ export default function NewMediaPage() {
                                         </div>
                                     </div>
 
-                                    <div className="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-4">
-                                        <div className="space-y-1">
-                                            <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-600 uppercase tracking-wide block">
-                                                <Tag size={12} className="text-slate-400" /> Asset Title
-                                            </div>
-                                            <input
-                                                type="text"
-                                                value={p.title}
-                                                onChange={(e) => updateNewItem(i, { title: e.target.value })}
-                                                className="w-full border border-slate-200 rounded-sm px-3 py-2 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-50 transition-all bg-white"
-                                            />
-                                        </div>
-
-                                        <div className="space-y-1">
-                                            <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-600 uppercase tracking-wide block">
-                                                <Tag size={12} className="text-slate-400" /> Category
-                                            </div>
-                                            <select
-                                                value={p.category}
-                                                onChange={(e) => updateNewItem(i, { category: e.target.value as any })}
-                                                className="w-full border border-slate-200 rounded-sm px-3 py-2 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-50 transition-all bg-white cursor-pointer appearance-none"
-                                            >
-                                                <option value="image">Image</option>
-                                                <option value="video">Video</option>
-                                                <option value="brochure">Brochure</option>
-                                                <option value="flyer">Flyer</option>
-                                                <option value="other">Other</option>
-                                            </select>
-                                        </div>
-
-                                        <div className="space-y-1">
-                                            <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-600 uppercase tracking-wide block">
-                                                <AlignLeft size={12} className="text-slate-400" /> Description
-                                            </div>
-                                            <div className="relative">
+                                    <div className="flex-1 space-y-3">
+                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                            <div className="space-y-1">
+                                                <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-600 uppercase tracking-wide block">
+                                                    <Tag size={12} className="text-slate-400" /> Asset Title
+                                                </div>
                                                 <input
                                                     type="text"
-                                                    placeholder="Add a context..."
-                                                    value={p.description}
-                                                    onChange={(e) => updateNewItem(i, { description: e.target.value })}
-                                                    className="w-full border border-slate-200 rounded-sm px-3 py-2 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-50 transition-all bg-white pr-9"
+                                                    value={p.title}
+                                                    onChange={(e) => updateNewItem(i, { title: e.target.value })}
+                                                    className="w-full border border-slate-200 rounded-sm px-3 py-2 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-50 transition-all bg-white"
                                                 />
-                                                <button onClick={() => removeNewItem(i)} className="absolute right-1 top-1/2 -translate-y-1/2 bg-white text-slate-400 hover:text-rose-500 w-7 h-7 flex items-center justify-center rounded-sm transition-colors">
-                                                    <Trash2 size={14} />
-                                                </button>
+                                            </div>
+
+                                            <div className="space-y-1">
+                                                <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-600 uppercase tracking-wide block">
+                                                    <Tag size={12} className="text-slate-400" /> Category
+                                                </div>
+                                                <select
+                                                    value={p.category}
+                                                    onChange={(e) => {
+                                                        const cat = e.target.value as any;
+                                                        const mediaType = cat === 'video' ? 'video' : cat === 'brochure' ? 'document' : 'image';
+                                                        updateNewItem(i, { category: cat, mediaType });
+                                                    }}
+                                                    className="w-full border border-slate-200 rounded-sm px-3 py-2 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-50 transition-all bg-white cursor-pointer appearance-none"
+                                                >
+                                                    <option value="image">Image</option>
+                                                    <option value="video">Video</option>
+                                                    <option value="brochure">Brochure</option>
+                                                    <option value="flyer">Flyer</option>
+                                                    <option value="other">Other</option>
+                                                </select>
+                                            </div>
+
+                                            <div className="space-y-1">
+                                                <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-600 uppercase tracking-wide block">
+                                                    <AlignLeft size={12} className="text-slate-400" /> Description
+                                                </div>
+                                                <div className="relative">
+                                                    <input
+                                                        type="text"
+                                                        placeholder="Add a context..."
+                                                        value={p.description}
+                                                        onChange={(e) => updateNewItem(i, { description: e.target.value })}
+                                                        className="w-full border border-slate-200 rounded-sm px-3 py-2 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-50 transition-all bg-white pr-9"
+                                                    />
+                                                    <button onClick={() => removeNewItem(i)} className="absolute right-1 top-1/2 -translate-y-1/2 bg-white text-slate-400 hover:text-rose-500 w-7 h-7 flex items-center justify-center rounded-sm transition-colors">
+                                                        <Trash2 size={14} />
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
+
+                                        {(p.category === 'video' || p.category === 'brochure' || p.category === 'image') && (
+                                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2 border-t border-slate-100">
+                                                {p.category === 'video' && (
+                                                    <div className="space-y-1">
+                                                        <label className="text-xs font-semibold text-slate-600 uppercase tracking-wide block">
+                                                            Video Sub-Category
+                                                        </label>
+                                                        <select
+                                                            value={p.subCategory || 'Walkthrough'}
+                                                            onChange={(e) => updateNewItem(i, { subCategory: e.target.value })}
+                                                            className="w-full border border-slate-200 rounded-sm px-3 py-2 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-50 transition-all bg-white cursor-pointer appearance-none"
+                                                        >
+                                                            <option value="Walkthrough">Walkthrough</option>
+                                                            <option value="Drone View">Drone View</option>
+                                                            <option value="Brand">Brand</option>
+                                                            <option value="Event">Event</option>
+                                                            <option value="Update">Update</option>
+                                                            <option value="Testimonial">Testimonial</option>
+                                                            <option value="Other">Other</option>
+                                                        </select>
+                                                    </div>
+                                                )}
+                                                {(p.category === 'video' || p.category === 'brochure') && (
+                                                    <div className="space-y-1">
+                                                        <label className="text-xs font-semibold text-slate-600 uppercase tracking-wide block">
+                                                            Cover / Thumbnail Image URL
+                                                        </label>
+                                                        <input
+                                                            type="text"
+                                                            value={p.thumbnail || ''}
+                                                            onChange={(e) => updateNewItem(i, { thumbnail: e.target.value })}
+                                                            placeholder="Paste image URL (for cover/preview)..."
+                                                            className="w-full border border-slate-200 rounded-sm px-3 py-2 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-50 transition-all bg-white"
+                                                        />
+                                                    </div>
+                                                )}
+                                                <div className="space-y-1 flex items-center pt-4">
+                                                    <label className="flex items-center gap-2 cursor-pointer select-none">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={!!p.isMainImage}
+                                                            onChange={(e) => updateNewItem(i, { isMainImage: e.target.checked })}
+                                                            className="w-4 h-4 rounded border-slate-200 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                                                        />
+                                                        <span className="text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                                                            Featured Video / Main Image
+                                                        </span>
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             ))}

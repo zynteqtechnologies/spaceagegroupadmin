@@ -20,6 +20,7 @@ export interface IMediaItem {
     category?: 'image' | 'video' | 'brochure' | 'flyer' | 'other';
     isInProjects?: boolean;
     provider?: 'cloudinary' | 'youtube' | 'vimeo' | 'none';
+    subCategory?: string;
 }
 
 export interface IFloorPlan {
@@ -73,6 +74,12 @@ export interface IProject extends Document {
     title: string;
     slug: string;
     status?: 'upcoming' | 'ongoing' | 'completed';
+    address?: string;
+    estYear?: string;
+    featured?: boolean;
+    category?: string;
+    area?: string;
+    units?: number;
 
     // ②  Hero Images (carousel 2-3)
     heroImages: mongoose.Types.DocumentArray<IMediaItem & Document>;
@@ -133,6 +140,7 @@ const MediaItemSchema = new Schema<IMediaItem>({
     category: { type: String, enum: ['image', 'video', 'brochure', 'flyer', 'other'], default: 'other' },
     isInProjects: { type: Boolean, default: false },
     provider: { type: String, enum: ['cloudinary', 'youtube', 'vimeo', 'none'], default: 'cloudinary' },
+    subCategory: { type: String, default: null },
 });
 
 const FloorPlanSchema = new Schema<IFloorPlan>({
@@ -177,6 +185,12 @@ const ProjectSchema = new Schema<IProject>(
         slug: { type: String, required: true, unique: true, lowercase: true, trim: true },
         status: { type: String, enum: ['upcoming', 'ongoing', 'completed'], default: 'upcoming' },
         headline: { type: String, trim: true },
+        address: { type: String, default: '' },
+        estYear: { type: String, default: '' },
+        featured: { type: Boolean, default: false },
+        category: { type: String, default: '' },
+        area: { type: String, default: '' },
+        units: { type: Number, default: 0 },
 
         heroImages: [MediaItemSchema],
         shortIntro: { type: String },

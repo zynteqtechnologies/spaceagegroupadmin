@@ -29,6 +29,9 @@ export async function POST(req: NextRequest) {
         const linkedin = formData.get('linkedin') as string;
         const instagram = formData.get('instagram') as string;
         const facebook = formData.get('facebook') as string;
+        const taglineThought = formData.get('taglineThought') as string || '';
+        const skillsString = formData.get('skills') as string || '';
+        const skills = skillsString.split(',').map(s => s.trim()).filter(Boolean);
         const order = parseInt(formData.get('order') as string || '0');
         const file = formData.get('image') as File | null;
 
@@ -58,6 +61,8 @@ export async function POST(req: NextRequest) {
                 instagram,
                 facebook
             },
+            taglineThought,
+            skills,
             order
         });
 

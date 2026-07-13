@@ -40,8 +40,4 @@ UserSchema.methods.comparePassword = async function (candidatePassword: string) 
   return await bcrypt.compare(candidatePassword, this.password);
 };
 
-if (mongoose.models.User) {
-  delete (mongoose.models as any).User;
-}
-
-export default mongoose.model<IUser>('User', UserSchema);
+export default mongoose.models.User || mongoose.model<IUser>('User', UserSchema);

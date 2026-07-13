@@ -46,8 +46,4 @@ const BlogPostSchema = new Schema<IBlogPost>(
     { timestamps: true }
 );
 
-if (mongoose.models.BlogPost) {
-    delete (mongoose.models as any).BlogPost;
-}
-
-export default mongoose.model<IBlogPost>('BlogPost', BlogPostSchema);
+export default mongoose.models.BlogPost || mongoose.model<IBlogPost>('BlogPost', BlogPostSchema);

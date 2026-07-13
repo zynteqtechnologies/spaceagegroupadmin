@@ -52,7 +52,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
         await connectDB();
 
         const body = await req.json();
-        const { title, slug, status, headline, shortIntro } = body;
+        const { title, slug, status, headline, shortIntro, address, estYear, featured, category, area, units } = body;
 
         const project = await findProject(id);
         if (!project) {
@@ -63,6 +63,12 @@ export async function PATCH(req: NextRequest, { params }: Params) {
         if (headline !== undefined) project.headline = headline.trim();
         if (shortIntro !== undefined) project.shortIntro = shortIntro.trim();
         if (status !== undefined) project.status = status;
+        if (address !== undefined) project.address = address.trim();
+        if (estYear !== undefined) project.estYear = estYear.trim();
+        if (featured !== undefined) project.featured = !!featured;
+        if (category !== undefined) project.category = category.trim();
+        if (area !== undefined) project.area = area.trim();
+        if (units !== undefined) project.units = units ? Number(units) : 0;
 
         if (slug !== undefined) {
             const newSlug = slug.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');

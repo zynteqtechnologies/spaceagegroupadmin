@@ -2,7 +2,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Plus, Building2, ChevronRight, Loader2, Trash2, Eye, Pencil, ImageIcon, Film, LayoutGrid } from 'lucide-react';
+import { Plus, Building2, ChevronRight, Loader2, Trash2, Eye, Pencil, ImageIcon, Film, LayoutGrid, MapPin } from 'lucide-react';
 import { listProjects, createProject, deleteProject } from '@/lib/projectApi';
 import type { ProjectDoc, ProjectStatus } from '@/types/project';
 
@@ -26,7 +26,7 @@ export default function ProjectsPage() {
     const [deletingId, setDeletingId] = useState<string | null>(null);
 
     const [form, setForm] = useState({
-        title: '', headline: '', status: 'upcoming' as ProjectStatus, shortIntro: '',
+        title: '', headline: '', status: 'upcoming' as ProjectStatus, shortIntro: '', address: '', estYear: '', featured: false, category: '', area: '', units: 0
     });
 
     useEffect(() => {
@@ -43,7 +43,7 @@ export default function ProjectsPage() {
             const project = await createProject(form);
             setProjects((prev) => [project, ...prev]);
             setTab('all');
-            setForm({ title: '', headline: '', status: 'upcoming', shortIntro: '' });
+            setForm({ title: '', headline: '', status: 'upcoming', shortIntro: '', address: '', estYear: '', featured: false, category: '', area: '', units: 0 });
         } catch (err) {
             alert(err instanceof Error ? err.message : 'Create failed');
         } finally {
@@ -168,6 +168,68 @@ export default function ProjectsPage() {
                                     <option value="completed">Completed</option>
                                 </select>
                             </div>
+                            <div>
+                                <label className="text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1 block">Project Category</label>
+                                <input
+                                    type="text"
+                                    placeholder="e.g. Township, Residential, Commercial"
+                                    value={form.category}
+                                    onChange={(e) => setForm((p) => ({ ...p, category: e.target.value }))}
+                                    className="w-full border border-slate-200 rounded-lg px-4 py-2.5 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-50 transition-all"
+                                />
+                            </div>
+                            <div>
+                                <label className="text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1 block">Project Address</label>
+                                <input
+                                    type="text"
+                                    placeholder="e.g. Near Star Mall, Alkapuri, Vadodara"
+                                    value={form.address}
+                                    onChange={(e) => setForm((p) => ({ ...p, address: e.target.value }))}
+                                    className="w-full border border-slate-200 rounded-lg px-4 py-2.5 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-50 transition-all"
+                                />
+                            </div>
+                            <div>
+                                <label className="text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1 block">Established Year</label>
+                                <input
+                                    type="text"
+                                    placeholder="e.g. 2025 or Est. 2026"
+                                    value={form.estYear}
+                                    onChange={(e) => setForm((p) => ({ ...p, estYear: e.target.value }))}
+                                    className="w-full border border-slate-200 rounded-lg px-4 py-2.5 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-50 transition-all"
+                                />
+                            </div>
+                            <div>
+                                <label className="text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1 block">Area (e.g. 2.5 Acres)</label>
+                                <input
+                                    type="text"
+                                    placeholder="e.g. 2.5 Acres"
+                                    value={form.area}
+                                    onChange={(e) => setForm((p) => ({ ...p, area: e.target.value }))}
+                                    className="w-full border border-slate-200 rounded-lg px-4 py-2.5 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-50 transition-all"
+                                />
+                            </div>
+                            <div>
+                                <label className="text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1 block">Total Units</label>
+                                <input
+                                    type="number"
+                                    placeholder="e.g. 128"
+                                    value={form.units || ''}
+                                    onChange={(e) => setForm((p) => ({ ...p, units: e.target.value ? Number(e.target.value) : 0 }))}
+                                    className="w-full border border-slate-200 rounded-lg px-4 py-2.5 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-50 transition-all"
+                                />
+                            </div>
+                            <div className="sm:col-span-2 flex items-center gap-2 pt-2">
+                                <input
+                                    type="checkbox"
+                                    id="featured"
+                                    checked={form.featured}
+                                    onChange={(e) => setForm((p) => ({ ...p, featured: e.target.checked }))}
+                                    className="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500 cursor-pointer"
+                                />
+                                <label htmlFor="featured" className="text-sm font-semibold text-slate-700 cursor-pointer selection:bg-transparent">
+                                    Mark as Featured Project
+                                </label>
+                            </div>
                             <div className="sm:col-span-2">
                                 <label className="text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1 block">Short Intro</label>
                                 <textarea
@@ -245,12 +307,37 @@ export default function ProjectsPage() {
                                             <span className={`w-1.5 h-1.5 rounded-full ${STATUS_DOT[status]}`} />
                                             {status.charAt(0).toUpperCase() + status.slice(1)}
                                         </span>
+                                        {project.featured && (
+                                            <span className="absolute top-3 right-3 bg-amber-500 text-white text-[10px] font-extrabold px-2 py-1 rounded-md shadow-sm border border-amber-400 flex items-center gap-1">
+                                                ★ Featured
+                                            </span>
+                                        )}
                                     </div>
 
                                     {/* Info */}
                                     <div className="p-4">
+                                        {project.category && (
+                                            <span className="text-[10px] uppercase font-bold tracking-wider text-amber-600 mb-1 block">
+                                                {project.category}
+                                            </span>
+                                        )}
                                         <h3 className="font-bold text-slate-900 text-sm leading-tight">{project.title}</h3>
                                         {project.headline && <p className="text-xs text-slate-400 mt-0.5 line-clamp-1">{project.headline}</p>}
+                                        
+                                        {(project.address || project.estYear) && (
+                                            <div className="text-[11px] text-slate-500 mt-2.5 flex flex-col gap-0.5">
+                                                {project.address && (
+                                                    <span className="flex items-center gap-1 truncate" title={project.address}>
+                                                        <MapPin size={11} className="text-slate-400 shrink-0" /> {project.address}
+                                                    </span>
+                                                )}
+                                                {project.estYear && (
+                                                    <span className="flex items-center gap-1 font-medium">
+                                                        <span className="text-slate-400 text-[10px] uppercase font-semibold">Est:</span> {project.estYear}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        )}
 
                                         {/* Media counts */}
                                         <div className="flex items-center gap-2 mt-3">

@@ -208,57 +208,125 @@ export default function EditMediaPage({ params }: { params: Promise<{ id: string
                                     </div>
 
                                     {/* Detailed Controls */}
-                                    <div className="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-4">
-                                        <div className="space-y-1.5">
-                                            <div className="flex items-center gap-1.5 text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">
-                                                Asset Title
-                                            </div>
-                                            <input 
-                                                type="text"
-                                                value={item.title}
-                                                onChange={(e) => handleUpdateItem(idx, { title: e.target.value })}
-                                                className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-900 outline-none focus:border-indigo-400 focus:bg-white transition-all"
-                                            />
-                                        </div>
-
-                                        <div className="space-y-1.5">
-                                            <div className="flex items-center gap-1.5 text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">
-                                                Category
-                                            </div>
-                                            <select 
-                                                value={item.category}
-                                                onChange={(e) => handleUpdateItem(idx, { category: e.target.value as any })}
-                                                className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-900 outline-none focus:border-indigo-400 focus:bg-white transition-all appearance-none cursor-pointer"
-                                            >
-                                                <option value="image">Image</option>
-                                                <option value="video">Video</option>
-                                                <option value="brochure">Brochure</option>
-                                                <option value="flyer">Flyer</option>
-                                                <option value="other">Other</option>
-                                            </select>
-                                        </div>
-
-                                        <div className="space-y-1.5 relative">
-                                            <div className="flex items-center gap-1.5 text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">
-                                                Description / URL
-                                            </div>
-                                            <div className="relative">
+                                    <div className="flex-1 space-y-3">
+                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                            <div className="space-y-1.5">
+                                                <div className="flex items-center gap-1.5 text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">
+                                                    Asset Title
+                                                </div>
                                                 <input 
                                                     type="text"
-                                                    value={item.provider === 'youtube' ? item.url : (item.description || '')}
-                                                    onChange={(e) => item.provider === 'youtube' ? handleUpdateItem(idx, { url: e.target.value }) : handleUpdateItem(idx, { description: e.target.value })}
-                                                    placeholder={item.provider === 'youtube' ? 'YouTube URL' : 'Optional description...'}
-                                                    className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-2.5 text-xs font-medium text-slate-600 outline-none focus:border-indigo-400 focus:bg-white transition-all pr-12"
+                                                    value={item.title}
+                                                    onChange={(e) => handleUpdateItem(idx, { title: e.target.value })}
+                                                    className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-900 outline-none focus:border-indigo-400 focus:bg-white transition-all"
                                                 />
-                                                <button 
-                                                    onClick={() => handleRemoveItem(idx)}
-                                                    className="absolute right-1 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg flex items-center justify-center text-slate-300 hover:text-rose-500 hover:bg-rose-50 transition-all"
-                                                    title="Remove asset"
+                                            </div>
+
+                                            <div className="space-y-1.5">
+                                                <div className="flex items-center gap-1.5 text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">
+                                                    Category
+                                                </div>
+                                                <select 
+                                                    value={item.category}
+                                                    onChange={(e) => handleUpdateItem(idx, { category: e.target.value as any })}
+                                                    className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-900 outline-none focus:border-indigo-400 focus:bg-white transition-all appearance-none cursor-pointer"
                                                 >
-                                                    <Trash2 size={16} />
-                                                </button>
+                                                    <option value="image">Image</option>
+                                                    <option value="video">Video</option>
+                                                    <option value="brochure">Brochure</option>
+                                                    <option value="flyer">Flyer</option>
+                                                    <option value="other">Other</option>
+                                                </select>
+                                            </div>
+
+                                            <div className="space-y-1.5 relative">
+                                                <div className="flex items-center gap-1.5 text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">
+                                                    Description
+                                                </div>
+                                                <div className="relative">
+                                                    <input 
+                                                        type="text"
+                                                        value={item.description || ''}
+                                                        onChange={(e) => handleUpdateItem(idx, { description: e.target.value })}
+                                                        placeholder="Optional description..."
+                                                        className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-2.5 text-xs font-medium text-slate-600 outline-none focus:border-indigo-400 focus:bg-white transition-all pr-12"
+                                                    />
+                                                    <button 
+                                                        onClick={() => handleRemoveItem(idx)}
+                                                        className="absolute right-1 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg flex items-center justify-center text-slate-300 hover:text-rose-500 hover:bg-rose-50 transition-all"
+                                                        title="Remove asset"
+                                                    >
+                                                        <Trash2 size={16} />
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
+
+                                        {(item.category === 'video' || item.category === 'brochure' || item.provider === 'youtube' || item.category === 'image') && (
+                                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2 border-t border-slate-100">
+                                                {item.provider === 'youtube' && (
+                                                    <div className="space-y-1.5">
+                                                        <div className="flex items-center gap-1.5 text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">
+                                                            YouTube URL
+                                                        </div>
+                                                        <input 
+                                                            type="text"
+                                                            value={item.url}
+                                                            onChange={(e) => handleUpdateItem(idx, { url: e.target.value })}
+                                                            placeholder="YouTube video URL..."
+                                                            className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-2 text-xs font-medium text-slate-600 outline-none focus:border-indigo-400 focus:bg-white transition-all"
+                                                        />
+                                                    </div>
+                                                )}
+                                                {item.category === 'video' && (
+                                                    <div className="space-y-1.5">
+                                                        <div className="flex items-center gap-1.5 text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">
+                                                            Video Sub-Category
+                                                        </div>
+                                                        <select
+                                                            value={item.subCategory || 'Walkthrough'}
+                                                            onChange={(e) => handleUpdateItem(idx, { subCategory: e.target.value })}
+                                                            className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-2 text-xs font-bold text-slate-900 outline-none focus:border-indigo-400 focus:bg-white transition-all appearance-none cursor-pointer"
+                                                        >
+                                                            <option value="Walkthrough">Walkthrough</option>
+                                                            <option value="Drone View">Drone View</option>
+                                                            <option value="Brand">Brand</option>
+                                                            <option value="Event">Event</option>
+                                                            <option value="Update">Update</option>
+                                                            <option value="Testimonial">Testimonial</option>
+                                                            <option value="Other">Other</option>
+                                                        </select>
+                                                    </div>
+                                                )}
+                                                {(item.category === 'video' || item.category === 'brochure') && (
+                                                    <div className="space-y-1.5">
+                                                        <div className="flex items-center gap-1.5 text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">
+                                                            Cover / Thumbnail Image URL
+                                                        </div>
+                                                        <input
+                                                            type="text"
+                                                            value={item.thumbnail || ''}
+                                                            onChange={(e) => handleUpdateItem(idx, { thumbnail: e.target.value })}
+                                                            placeholder="Paste image URL (for cover/preview)..."
+                                                            className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-2 text-xs font-medium text-slate-600 outline-none focus:border-indigo-400 focus:bg-white transition-all"
+                                                        />
+                                                    </div>
+                                                )}
+                                                <div className="space-y-1.5 flex items-center pt-5">
+                                                    <label className="flex items-center gap-2 cursor-pointer select-none">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={!!item.isMainImage}
+                                                            onChange={(e) => handleUpdateItem(idx, { isMainImage: e.target.checked })}
+                                                            className="w-4 h-4 rounded border-slate-200 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                                                        />
+                                                        <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                                                            Featured Video / Main Image
+                                                        </span>
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             </div>

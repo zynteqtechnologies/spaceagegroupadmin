@@ -26,6 +26,7 @@ const MediaItemSchema = new Schema<IMediaItem>({
     category: { type: String, enum: ['image', 'video', 'brochure', 'flyer', 'other'], default: 'other' },
     isInProjects: { type: Boolean, default: false },
     provider: { type: String, enum: ['cloudinary', 'youtube', 'vimeo', 'none'], default: 'cloudinary' },
+    subCategory: { type: String, default: null },
 });
 
 const MediaSchema = new Schema<IMedia>(

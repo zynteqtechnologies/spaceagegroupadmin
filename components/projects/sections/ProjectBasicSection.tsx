@@ -13,6 +13,12 @@ export default function ProjectBasicSection({ project, onUpdate }: Props) {
         headline: project.headline ?? '',
         status: project.status ?? 'upcoming',
         slug: project.slug,
+        address: project.address ?? '',
+        estYear: project.estYear ?? '',
+        featured: !!project.featured,
+        category: project.category ?? '',
+        area: project.area ?? '',
+        units: project.units ?? 0,
     });
     const [saving, setSaving] = useState(false);
     const [saved, setSaved] = useState(false);
@@ -60,6 +66,63 @@ export default function ProjectBasicSection({ project, onUpdate }: Props) {
                     />
                 </div>
 
+                <div className="grid grid-cols-1 sm:grid-cols-5 gap-3 sm:gap-4">
+                    <div>
+                        <label className="text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1.5 block">Project Category</label>
+                        <input
+                            type="text"
+                            placeholder="e.g. Township, Luxury"
+                            value={form.category}
+                            onChange={(e) => setForm(p => ({ ...p, category: e.target.value }))}
+                            className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-50 transition-all"
+                        />
+                    </div>
+ 
+                    <div>
+                        <label className="text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1.5 block">Project Address</label>
+                        <input
+                            type="text"
+                            placeholder="e.g. Near Star Mall, Alkapuri"
+                            value={form.address}
+                            onChange={(e) => setForm(p => ({ ...p, address: e.target.value }))}
+                            className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-50 transition-all"
+                        />
+                    </div>
+ 
+                    <div>
+                        <label className="text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1.5 block">Established Year</label>
+                        <input
+                            type="text"
+                            placeholder="e.g. 2025 or Est. 2026"
+                            value={form.estYear}
+                            onChange={(e) => setForm(p => ({ ...p, estYear: e.target.value }))}
+                            className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-50 transition-all"
+                        />
+                    </div>
+
+                    <div>
+                        <label className="text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1.5 block">Area (Acreage)</label>
+                        <input
+                            type="text"
+                            placeholder="e.g. 2.5 Acres"
+                            value={form.area}
+                            onChange={(e) => setForm(p => ({ ...p, area: e.target.value }))}
+                            className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-50 transition-all"
+                        />
+                    </div>
+
+                    <div>
+                        <label className="text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1.5 block">Total Units</label>
+                        <input
+                            type="number"
+                            placeholder="e.g. 128"
+                            value={form.units || ''}
+                            onChange={(e) => setForm(p => ({ ...p, units: e.target.value ? Number(e.target.value) : 0 }))}
+                            className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-50 transition-all"
+                        />
+                    </div>
+                </div>
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                     <div>
                         <label className="text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1.5 block">Status</label>
@@ -83,6 +146,19 @@ export default function ProjectBasicSection({ project, onUpdate }: Props) {
                             className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-50 transition-all font-mono text-xs"
                         />
                     </div>
+                </div>
+
+                <div className="flex items-center gap-2 pt-2">
+                    <input
+                        type="checkbox"
+                        id="featured"
+                        checked={form.featured}
+                        onChange={(e) => setForm(p => ({ ...p, featured: e.target.checked }))}
+                        className="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500 cursor-pointer"
+                    />
+                    <label htmlFor="featured" className="text-sm font-semibold text-slate-700 cursor-pointer selection:bg-transparent">
+                        Mark as Featured Project
+                    </label>
                 </div>
             </div>
 
