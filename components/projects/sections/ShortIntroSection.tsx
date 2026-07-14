@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Loader2, Save } from 'lucide-react';
 import { updateProjectBasic } from '@/lib/projectApi';
 import type { ProjectDoc } from '@/types/project';
+import { useModal } from '@/context/ModalContext';
 
 interface Props { project: ProjectDoc; onUpdate: (doc: ProjectDoc) => void; }
 
@@ -11,6 +12,7 @@ export default function ShortIntroSection({ project, onUpdate }: Props) {
     const [shortIntro, setShortIntro] = useState(project.shortIntro ?? '');
     const [saving, setSaving] = useState(false);
     const [saved, setSaved] = useState(false);
+    const { showAlert } = useModal();
 
     const handleSave = async () => {
         setSaving(true);
@@ -18,9 +20,10 @@ export default function ShortIntroSection({ project, onUpdate }: Props) {
             const updated = await updateProjectBasic(project._id, { shortIntro });
             onUpdate(updated);
             setSaved(true);
+            showAlert('Saved', 'Short intro has been saved successfully.', 'success');
             setTimeout(() => setSaved(false), 2000);
         } catch (err) {
-            alert(err instanceof Error ? err.message : 'Save failed');
+            showAlert('Error', err instanceof Error ? err.message : 'Save failed', 'error');
         } finally {
             setSaving(false);
         }

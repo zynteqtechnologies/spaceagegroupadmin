@@ -43,11 +43,12 @@ export async function createMedia(
     return handleResponse<MediaDoc>(res);
 }
 
-export async function updateMedia(id: string, payload: { title?: string; items?: MediaItem[] }): Promise<MediaDoc> {
+export async function updateMedia(id: string, payload: { title?: string; items?: MediaItem[] } | FormData): Promise<MediaDoc> {
+    const isFormData = payload instanceof FormData;
     const res = await fetch(`${BASE}/${id}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        headers: isFormData ? undefined : { 'Content-Type': 'application/json' },
+        body: isFormData ? payload : JSON.stringify(payload),
     });
     return handleResponse<MediaDoc>(res);
 }

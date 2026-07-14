@@ -6,6 +6,7 @@ import { deleteFromCloudinary } from '@/lib/cloudinary';
 import Project from '@/models/Project';
 import { IMediaItem } from '@/models/Project';
 import { getCurrentUser, isManager, isPrivileged } from '@/lib/authUtils';
+import { requireAuth } from '@/lib/apiGuard';
 import { createManagerNotification } from '@/lib/notificationUtils';
 
 type Params = { params: Promise<{ id: string }> };
@@ -47,8 +48,11 @@ export async function GET(_req: NextRequest, { params }: Params) {
 // ── PATCH /api/projects/:id — update basic info ───────────────────────────────
 export async function PATCH(req: NextRequest, { params }: Params) {
     try {
-        const { id } = await params;
+        const guard = await requireAuth(req);
+        if (guard) return guard;
         const currentUser = await getCurrentUser(req);
+
+        const { id } = await params;
         await connectDB();
 
         const body = await req.json();
@@ -82,14 +86,12 @@ export async function PATCH(req: NextRequest, { params }: Params) {
         await project.save();
  
         // ── Privileged Action Notification ──────────────────────────────
-        if (currentUser && isPrivileged(currentUser)) {
-            await createManagerNotification(
-                currentUser._id.toString(),
-                currentUser.name,
-                'updated project',
-                project.title
-            );
-        }
+        await createManagerNotification(
+            currentUser._id.toString(),
+            currentUser.name,
+            'updated project',
+            project.title
+        );
 
         return NextResponse.json({ message: 'Updated successfully', project });
     } catch (err: unknown) {
@@ -102,7 +104,10 @@ export async function PATCH(req: NextRequest, { params }: Params) {
 // ── DELETE /api/projects/:id — delete entire project ─────────────────────────
 export async function DELETE(req: NextRequest, { params }: Params) {
     try {
+        const guard = await requireAuth(req);
+        if (guard) return guard;
         const currentUser = await getCurrentUser(req);
+
         const { id } = await params;
         await connectDB();
 
@@ -146,14 +151,12 @@ export async function DELETE(req: NextRequest, { params }: Params) {
         await Project.findByIdAndDelete(project._id);
  
         // ── Privileged Action Notification ──────────────────────────────
-        if (currentUser && isPrivileged(currentUser)) {
-            await createManagerNotification(
-                currentUser._id.toString(),
-                currentUser.name,
-                'deleted project',
-                projectTitle
-            );
-        }
+        await createManagerNotification(
+            currentUser._id.toString(),
+            currentUser.name,
+            'deleted project',
+            projectTitle
+        );
 
         return NextResponse.json({ message: 'Project deleted successfully' });
     } catch (err: unknown) {

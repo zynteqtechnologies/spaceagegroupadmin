@@ -8,6 +8,7 @@ import {
     CornerDownRight, User, Mail
 } from 'lucide-react';
 import { getBlogPost } from '@/lib/blogApi';
+import { useModal } from '@/context/ModalContext';
 
 export default function CommentModerationPage({ params }: { params: Promise<{ id: string }> }) {
     const router = useRouter();
@@ -16,26 +17,24 @@ export default function CommentModerationPage({ params }: { params: Promise<{ id
     const [comments, setComments] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [modifyingId, setModifyingId] = useState<string | null>(null);
+    const [error, setError] = useState<string | null>(null);
+    const { showAlert, showConfirm } = useModal();
 
     useEffect(() => {
-        const loadData = async () => {
-            try {
-                const [postData, commentData] = await Promise.all([
-                    getBlogPost(id),
-                    fetch(`/api/blog/${id}/engagement`).then(res => res.json())
-                ]);
-                setPost(postData);
-                setComments(commentData);
-            } catch (err) {
-                console.error(err);
-            } finally {
-                setLoading(false);
-            }
-        };
-        loadData();
+        getBlogPost(id)
+            .then(data => {
+                setPost(data);
+                return fetch(`/api/blog/${id}/comments`);
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (Array.isArray(data)) setComments(data);
+            })
+            .catch(err => setError(err.message))
+            .finally(() => setLoading(false));
     }, [id]);
 
-    const handleToggleApproval = async (commentId: string, currentStatus: boolean) => {
+    const handleToggleApprove = async (commentId: string, currentStatus: boolean) => {
         setModifyingId(commentId);
         try {
             await fetch(`/api/blog/${id}/engagement`, {
@@ -44,15 +43,17 @@ export default function CommentModerationPage({ params }: { params: Promise<{ id
                 body: JSON.stringify({ commentId, isApproved: !currentStatus })
             });
             setComments(prev => prev.map(c => c._id === commentId ? { ...c, isApproved: !currentStatus } : c));
-        } catch (err) {
-            console.error(err);
+            showAlert('Success', `Comment status updated successfully.`, 'success');
+        } catch (err: any) {
+            showAlert('Error', err.message || 'Failed to update comment status', 'error');
         } finally {
             setModifyingId(null);
         }
     };
 
     const handleDelete = async (commentId: string) => {
-        if (!confirm('Permanently delete this comment?')) return;
+        const confirmed = await showConfirm('Delete Comment', 'Permanently delete this comment?');
+        if (!confirmed) return;
         setModifyingId(commentId);
         try {
             await fetch(`/api/blog/${id}/engagement`, {
@@ -61,8 +62,9 @@ export default function CommentModerationPage({ params }: { params: Promise<{ id
                 body: JSON.stringify({ commentId })
             });
             setComments(prev => prev.filter(c => c._id !== commentId));
-        } catch (err) {
-            console.error(err);
+            showAlert('Deleted', 'Comment has been permanently deleted.', 'success');
+        } catch (err: any) {
+            showAlert('Error', err.message || 'Failed to delete comment', 'error');
         } finally {
             setModifyingId(null);
         }

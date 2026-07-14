@@ -6,6 +6,7 @@ import Project from '@/models/Project';
 import { uploadBuffer } from '@/lib/cloudinary';
 import { MediaItem } from '@/types/project';
 import { getCurrentUser, isManager, isPrivileged } from '@/lib/authUtils';
+import { requireAuth } from '@/lib/apiGuard';
 import { createManagerNotification } from '@/lib/notificationUtils';
 
 // ── GET /api/media ────────────────────────────────────────────────────────────
@@ -23,7 +24,10 @@ export async function GET() {
 // ── POST /api/media ───────────────────────────────────────────────────────────
 export async function POST(req: NextRequest) {
     try {
+        const guard = await requireAuth(req);
+        if (guard) return guard;
         const currentUser = await getCurrentUser(req);
+
         await connectDB();
         const formData = await req.formData();
         
@@ -102,14 +106,12 @@ export async function POST(req: NextRequest) {
         });
 
         // ── Privileged Action Notification ──────────────────────────────
-        if (currentUser && isPrivileged(currentUser)) {
-            await createManagerNotification(
-                currentUser._id.toString(),
-                currentUser.name,
-                'uploaded media for project',
-                project.title
-            );
-        }
+        await createManagerNotification(
+            currentUser._id.toString(),
+            currentUser.name,
+            'uploaded media for project',
+            project.title
+        );
 
         return NextResponse.json(media, { status: 201 });
     } catch (err: unknown) {

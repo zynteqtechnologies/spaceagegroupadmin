@@ -4,6 +4,7 @@ import { connectDB } from '@/lib/mongodb';
 import { uploadBuffer, CloudinaryResult } from '@/lib/cloudinary';
 import HeroImage from '@/models/HeroImage';
 import { type NewMediaDetail } from '@/types/media';
+import { requireAuth } from '@/lib/apiGuard';
 
 // ── GET /api/hero-images ──────────────────────────────────────────────────────
 export async function GET() {
@@ -30,6 +31,9 @@ export async function GET() {
 // ── POST /api/hero-images ─────────────────────────────────────────────────────
 export async function POST(req: NextRequest) {
   try {
+    const guard = await requireAuth(req);
+    if (guard) return guard;
+
     await connectDB();
 
     const formData  = await req.formData();

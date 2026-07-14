@@ -5,6 +5,7 @@ export interface IBlogPost extends Document {
     title: string;
     slug: string;
     description: string; // Rich text/Markdown
+    excerpt: string; // Teaser/Excerpt
     category: string;
     tags: string[];
     image: {
@@ -12,6 +13,10 @@ export interface IBlogPost extends Document {
         cloudinaryId: string;
     };
     videoUrl?: string; // YouTube link
+    author: string;
+    authorRole: string;
+    readTime: string;
+    featured: boolean;
     status: 'published' | 'draft';
     settings: {
         allowLikes: boolean;
@@ -28,6 +33,7 @@ const BlogPostSchema = new Schema<IBlogPost>(
         title: { type: String, required: true },
         slug: { type: String, required: true, unique: true },
         description: { type: String, required: true },
+        excerpt: { type: String, default: '' },
         category: { type: String, required: true },
         tags: [{ type: String }],
         image: {
@@ -35,6 +41,10 @@ const BlogPostSchema = new Schema<IBlogPost>(
             cloudinaryId: { type: String, required: true },
         },
         videoUrl: { type: String },
+        author: { type: String, default: 'Space Age Group' },
+        authorRole: { type: String, default: 'Media & Communications' },
+        readTime: { type: String, default: '5 min read' },
+        featured: { type: Boolean, default: false },
         status: { type: String, enum: ['published', 'draft'], default: 'draft' },
         settings: {
             allowLikes: { type: Boolean, default: true },
@@ -46,4 +56,8 @@ const BlogPostSchema = new Schema<IBlogPost>(
     { timestamps: true }
 );
 
-export default mongoose.models.BlogPost || mongoose.model<IBlogPost>('BlogPost', BlogPostSchema);
+if (mongoose.models.BlogPost) {
+    delete (mongoose.models as any).BlogPost;
+}
+
+export default mongoose.model<IBlogPost>('BlogPost', BlogPostSchema);

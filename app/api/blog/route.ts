@@ -4,6 +4,7 @@ import { connectDB } from '@/lib/mongodb';
 import BlogPost from '@/models/BlogPost';
 import { uploadBuffer } from '@/lib/cloudinary';
 import { getCurrentUser, isManager, isPrivileged } from '@/lib/authUtils';
+import { requireAuth } from '@/lib/apiGuard';
 import { createManagerNotification } from '@/lib/notificationUtils';
 
 export async function GET(req: NextRequest) {
@@ -13,9 +14,23 @@ export async function GET(req: NextRequest) {
         const category = searchParams.get('category');
         
         await connectDB();
+
+        const currentUser = await getCurrentUser(req);
+        const isUserPrivileged = currentUser && isPrivileged(currentUser);
+
         const filter: any = {};
-        if (status) filter.status = status;
         if (category) filter.category = category;
+
+        if (status) {
+            if (status === 'draft' && !isUserPrivileged) {
+                return NextResponse.json({ error: 'Forbidden: You do not have permission to view drafts' }, { status: 403 });
+            }
+            filter.status = status;
+        } else {
+            if (!isUserPrivileged) {
+                filter.status = 'published';
+            }
+        }
 
         const posts = await BlogPost.find(filter).sort({ createdAt: -1 });
         return NextResponse.json(posts);
@@ -26,14 +41,22 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
     try {
+        const guard = await requireAuth(req);
+        if (guard) return guard;
         const currentUser = await getCurrentUser(req);
+
         const formData = await req.formData();
         const title = formData.get('title') as string;
         const description = formData.get('description') as string;
+        const excerpt = formData.get('excerpt') as string || '';
         const category = formData.get('category') as string;
         const tags = JSON.parse(formData.get('tags') as string || '[]');
         const status = formData.get('status') as string || 'draft';
         const videoUrl = formData.get('videoUrl') as string;
+        const author = formData.get('author') as string || 'Space Age Group';
+        const authorRole = formData.get('authorRole') as string || 'Media & Communications';
+        const readTime = formData.get('readTime') as string || '5 min read';
+        const featured = formData.get('featured') === 'true';
         const allowLikes = formData.get('allowLikes') === 'true';
         const allowComments = formData.get('allowComments') === 'true';
         const imageFile = formData.get('image') as File | null;
@@ -59,10 +82,15 @@ export async function POST(req: NextRequest) {
             title,
             slug,
             description,
+            excerpt,
             category,
             tags,
             status,
             videoUrl,
+            author,
+            authorRole,
+            readTime,
+            featured,
             settings: { allowLikes, allowComments },
             image: {
                 url: uploadResult.secure_url,
@@ -71,14 +99,12 @@ export async function POST(req: NextRequest) {
         });
 
         // ── Privileged Action Notification ──────────────────────────────
-        if (currentUser && isPrivileged(currentUser)) {
-            await createManagerNotification(
-                currentUser._id.toString(),
-                currentUser.name,
-                'created a blog post',
-                title
-            );
-        }
+        await createManagerNotification(
+            currentUser._id.toString(),
+            currentUser.name,
+            'created a blog post',
+            title
+        );
 
         return NextResponse.json(post, { status: 201 });
     } catch (err: any) {

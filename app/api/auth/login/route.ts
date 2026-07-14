@@ -1,12 +1,16 @@
 // app/api/auth/login/route.ts
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/db';
 import User from '@/models/User';
 import jwt from 'jsonwebtoken';
 import { serialize } from 'cookie';
+import { checkRateLimit } from '@/lib/rateLimit';
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
+    const rateLimit = await checkRateLimit(req, 15, 5 * 60 * 1000);
+    if (rateLimit) return rateLimit;
+
     await connectDB();
     const { email, password } = await req.json();
 

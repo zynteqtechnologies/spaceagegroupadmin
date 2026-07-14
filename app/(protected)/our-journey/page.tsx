@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Milestone, Plus, Pencil, Trash2, Loader2, ChevronRight, AlertCircle } from 'lucide-react';
+import { useModal } from '@/context/ModalContext';
 
 interface TimelineEvent {
     _id: string;
@@ -16,12 +17,15 @@ export default function JourneyEventsPage() {
     const [events, setEvents] = useState<TimelineEvent[]>([]);
     const [loading, setLoading] = useState(true);
     const [deletingId, setDeletingId] = useState<string | null>(null);
+    const { showAlert, showConfirm } = useModal();
 
     const fetchEvents = () => {
         fetch('/api/timeline')
             .then(res => res.json())
             .then(data => {
-                if (Array.isArray(data)) setEvents(data);
+                if (Array.isArray(data)) {
+                    setEvents(data.sort((a, b) => (a.order || 0) - (b.order || 0)));
+                }
             })
             .catch(console.error)
             .finally(() => setLoading(false));
@@ -32,14 +36,16 @@ export default function JourneyEventsPage() {
     }, []);
 
     const handleDelete = async (id: string, label: string) => {
-        if (!confirm(`Are you sure you want to delete the milestone "${label}"?`)) return;
+        const confirmed = await showConfirm('Delete Milestone', `Are you sure you want to delete the milestone "${label}"?`);
+        if (!confirmed) return;
         setDeletingId(id);
         try {
             const res = await fetch(`/api/timeline/${id}`, { method: 'DELETE' });
             if (!res.ok) throw new Error('Failed to delete milestone');
             setEvents(events.filter(e => e._id !== id));
+            showAlert('Deleted', `Milestone "${label}" has been deleted.`, 'success');
         } catch (err: any) {
-            alert(err.message);
+            showAlert('Error', err.message || 'Failed to delete milestone', 'error');
         } finally {
             setDeletingId(null);
         }

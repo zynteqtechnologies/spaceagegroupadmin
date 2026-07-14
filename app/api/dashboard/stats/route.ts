@@ -6,15 +6,14 @@ import BlogPost from '@/models/BlogPost';
 import TeamMember from '@/models/TeamMember';
 import Media from '@/models/Media';
 import Notification from '@/models/Notification';
-import { getCurrentUser } from '@/lib/authUtils';
+import { requireAuth } from '@/lib/apiGuard';
 
 export async function GET(req: NextRequest) {
     try {
+        const guard = await requireAuth(req);
+        if (guard) return guard;
+
         await connectDB();
-        const user = await getCurrentUser(req);
-        if (!user) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-        }
 
         // Fetch standard counts
         const [

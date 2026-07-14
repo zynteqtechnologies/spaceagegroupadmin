@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Plus, Trash2, Loader2, Save, Sparkles } from 'lucide-react';
 import { updateAmenities } from '@/lib/projectApi';
 import type { ProjectDoc, AmenityItem } from '@/types/project';
+import { useModal } from '@/context/ModalContext';
 
 interface Props { project: ProjectDoc; onUpdate: (doc: ProjectDoc) => void; }
 
@@ -14,22 +15,19 @@ const CATEGORIES = ['Sports', 'Wellness', 'Recreation', 'Convenience', 'Safety',
 const PRESETS = [
     { name: 'Swimming Pool', icon: '🏊', category: 'Sports' },
     { name: 'Gymnasium', icon: '🏋️', category: 'Wellness' },
-    { name: 'Clubhouse', icon: '🏛️', category: 'Recreation' },
+    { name: 'Childrens Play Area', icon: '🛝', category: 'Kids' },
     { name: 'Jogging Track', icon: '🏃', category: 'Sports' },
-    { name: 'Children Play Area', icon: '🛝', category: 'Kids' },
-    { name: 'Landscaped Garden', icon: '🌿', category: 'Green' },
-    { name: 'CCTV Surveillance', icon: '📹', category: 'Safety' },
-    { name: '24/7 Security', icon: '💂', category: 'Safety' },
+    { name: 'Clubhouse', icon: '🏠', category: 'Recreation' },
+    { name: 'Landscaped Garden', icon: '🌳', category: 'Green' },
+    { name: '24x7 Security', icon: '🛡️', category: 'Safety' },
     { name: 'Power Backup', icon: '⚡', category: 'Convenience' },
-    { name: 'Lift / Elevator', icon: '🛗', category: 'Convenience' },
-    { name: 'Car Parking', icon: '🚗', category: 'Convenience' },
-    { name: 'Indoor Games', icon: '🎱', category: 'Recreation' },
 ];
 
 export default function AmenitiesSection({ project, onUpdate }: Props) {
     const [items, setItems] = useState<AmenityItem[]>(project.amenities ?? []);
     const [saving, setSaving] = useState(false);
     const [saved, setSaved] = useState(false);
+    const { showAlert } = useModal();
 
     const addRow = () => setItems(prev => [...prev, { name: '', icon: '', category: 'Other', order: prev.length }]);
 
@@ -51,9 +49,10 @@ export default function AmenitiesSection({ project, onUpdate }: Props) {
             const updated = await updateAmenities(project._id, items);
             onUpdate(updated);
             setSaved(true);
+            showAlert('Saved', 'Amenities have been saved successfully.', 'success');
             setTimeout(() => setSaved(false), 2000);
         } catch (err) {
-            alert(err instanceof Error ? err.message : 'Save failed');
+            showAlert('Error', err instanceof Error ? err.message : 'Save failed', 'error');
         } finally {
             setSaving(false);
         }

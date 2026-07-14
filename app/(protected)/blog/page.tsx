@@ -8,6 +8,7 @@ import {
     Search, Filter, MoreVertical, Globe, Lock, Link as LinkIcon, CheckCircle2 as CheckCircleIcon
 } from 'lucide-react';
 import { listBlogPosts, deleteBlogPost } from '@/lib/blogApi';
+import { useModal } from '@/context/ModalContext';
 
 export default function BlogDashboard() {
     const [posts, setPosts] = useState<any[]>([]);
@@ -15,6 +16,7 @@ export default function BlogDashboard() {
     const [deletingId, setDeletingId] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [copyingId, setCopyingId] = useState<string | null>(null);
+    const { showAlert, showConfirm } = useModal();
 
     const handleCopyLink = (slug: string, id: string) => {
         const url = `${window.location.origin}/blog/${slug}`;
@@ -39,13 +41,15 @@ export default function BlogDashboard() {
     };
 
     const handleDelete = async (id: string, title: string) => {
-        if (!confirm(`Are you sure you want to delete "${title}"?`)) return;
+        const confirmed = await showConfirm('Delete Blog Post', `Are you sure you want to delete "${title}"?`);
+        if (!confirmed) return;
         setDeletingId(id);
         try {
             await deleteBlogPost(id);
             setPosts(prev => prev.filter(p => p._id !== id));
+            showAlert('Deleted', `Blog post "${title}" has been deleted.`, 'success');
         } catch (err: any) {
-            alert(err.message);
+            showAlert('Error', err.message || 'Failed to delete blog post', 'error');
         } finally {
             setDeletingId(null);
         }

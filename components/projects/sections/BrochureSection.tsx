@@ -4,6 +4,7 @@ import { useRef, useState, DragEvent } from 'react';
 import { FileText, X, Loader2, Trash2, Download, CloudUpload } from 'lucide-react';
 import { uploadBrochure, deleteBrochure } from '@/lib/projectApi';
 import type { ProjectDoc } from '@/types/project';
+import { useModal } from '@/context/ModalContext';
 
 interface Props { project: ProjectDoc; onUpdate: (doc: ProjectDoc) => void; }
 
@@ -20,9 +21,12 @@ export default function BrochureSection({ project, onUpdate }: Props) {
     const [uploading, setUploading] = useState(false);
     const [deleting, setDeleting] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const { showAlert, showConfirm } = useModal();
 
     const handleFile = (f: File) => {
-        if (f.type !== 'application/pdf') { setError('Only PDF files are allowed'); return; }
+        if (f.type !== 'application/pdf') {
+            setError('Brochure must be a PDF file'); return;
+        }
         if (f.size > 20 * 1024 * 1024) { setError('PDF must be under 20MB'); return; }
         setFile(f); setError(null);
     };
@@ -38,21 +42,25 @@ export default function BrochureSection({ project, onUpdate }: Props) {
         try {
             const updated = await uploadBrochure(project._id, file);
             onUpdate(updated); setFile(null);
+            showAlert('Uploaded', 'Brochure has been uploaded successfully.', 'success');
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Upload failed');
+            showAlert('Error', err instanceof Error ? err.message : 'Upload failed', 'error');
         } finally {
             setUploading(false);
         }
     };
 
     const handleDelete = async () => {
-        if (!confirm('Remove brochure?')) return;
+        const confirmed = await showConfirm('Remove Brochure', 'Remove brochure?');
+        if (!confirmed) return;
         setDeleting(true);
         try {
             const updated = await deleteBrochure(project._id);
             onUpdate(updated);
+            showAlert('Removed', 'Brochure has been removed.', 'success');
         } catch (err) {
-            alert(err instanceof Error ? err.message : 'Delete failed');
+            showAlert('Error', err instanceof Error ? err.message : 'Delete failed', 'error');
         } finally {
             setDeleting(false);
         }

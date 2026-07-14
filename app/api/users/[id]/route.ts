@@ -3,11 +3,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import User from '@/models/User';
 import { getCurrentUser, isAdministrator } from '@/lib/authUtils';
+import { requireAuth } from '@/lib/apiGuard';
 
 type Params = { params: Promise<{ id: string }> };
 
 export async function GET(req: NextRequest, { params }: Params) {
     try {
+        const guard = await requireAuth(req, 'administrator');
+        if (guard) return guard;
+
         const { id } = await params;
         await connectDB();
         const user = await User.findById(id).select('-password');
@@ -20,10 +24,8 @@ export async function GET(req: NextRequest, { params }: Params) {
 
 export async function PATCH(req: NextRequest, { params }: Params) {
     try {
-        const currentUser = await getCurrentUser(req);
-        if (!currentUser || !isAdministrator(currentUser)) {
-            return NextResponse.json({ error: 'Permission denied. Only Administrators can update users.' }, { status: 403 });
-        }
+        const guard = await requireAuth(req, 'administrator');
+        if (guard) return guard;
 
         const { id } = await params;
         await connectDB();
@@ -44,10 +46,8 @@ export async function PATCH(req: NextRequest, { params }: Params) {
 
 export async function DELETE(req: NextRequest, { params }: Params) {
     try {
-        const currentUser = await getCurrentUser(req);
-        if (!currentUser || !isAdministrator(currentUser)) {
-            return NextResponse.json({ error: 'Permission denied. Only Administrators can delete users.' }, { status: 403 });
-        }
+        const guard = await requireAuth(req, 'administrator');
+        if (guard) return guard;
 
         const { id } = await params;
         await connectDB();

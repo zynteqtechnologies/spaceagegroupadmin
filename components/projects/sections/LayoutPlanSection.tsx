@@ -4,6 +4,7 @@ import { useRef, useState, DragEvent } from 'react';
 import { CloudUpload, X, Loader2, Trash2, MapPin } from 'lucide-react';
 import { uploadLayoutPlan, deleteLayoutPlan } from '@/lib/projectApi';
 import type { ProjectDoc } from '@/types/project';
+import { useModal } from '@/context/ModalContext';
 
 interface Props { project: ProjectDoc; onUpdate: (doc: ProjectDoc) => void; }
 
@@ -17,16 +18,22 @@ export default function LayoutPlanSection({ project, onUpdate }: Props) {
     const [uploading, setUploading] = useState(false);
     const [deleting, setDeleting] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const { showAlert, showConfirm } = useModal();
 
     const handleFile = (f: File) => {
-        if (!f.type.startsWith('image/')) { setError('Only image files allowed'); return; }
-        if (preview) URL.revokeObjectURL(preview);
-        setFile(f);
+        if (!f.type.startsWith('image/')) {
+            setError('Layout plan must be an image file');
+            return;
+        }
+        setFile(f); setError(null);
         setPreview(URL.createObjectURL(f));
-        setError(null);
     };
 
-    const onDrop = (e: DragEvent<HTMLDivElement>) => {
+    const handleDrag = (e: DragEvent) => {
+        e.preventDefault(); setDragging(e.type === 'dragenter' || e.type === 'dragover');
+    };
+
+    const handleDrop = (e: DragEvent) => {
         e.preventDefault(); setDragging(false);
         const f = e.dataTransfer.files?.[0];
         if (f) handleFile(f);
@@ -40,21 +47,25 @@ export default function LayoutPlanSection({ project, onUpdate }: Props) {
             onUpdate(updated);
             if (preview) URL.revokeObjectURL(preview);
             setFile(null); setPreview(null);
+            showAlert('Uploaded', 'Layout plan has been uploaded successfully.', 'success');
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Upload failed');
+            showAlert('Error', err instanceof Error ? err.message : 'Upload failed', 'error');
         } finally {
             setUploading(false);
         }
     };
 
     const handleDelete = async () => {
-        if (!confirm('Remove layout plan?')) return;
+        const confirmed = await showConfirm('Remove Layout Plan', 'Remove layout plan?');
+        if (!confirmed) return;
         setDeleting(true);
         try {
             const updated = await deleteLayoutPlan(project._id);
             onUpdate(updated);
+            showAlert('Removed', 'Layout plan has been removed.', 'success');
         } catch (err) {
-            alert(err instanceof Error ? err.message : 'Delete failed');
+            showAlert('Error', err instanceof Error ? err.message : 'Delete failed', 'error');
         } finally {
             setDeleting(false);
         }
@@ -92,7 +103,7 @@ export default function LayoutPlanSection({ project, onUpdate }: Props) {
                     <div
                         onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
                         onDragLeave={() => setDragging(false)}
-                        onDrop={onDrop}
+                        onDrop={handleDrop}
                         onClick={() => inputRef.current?.click()}
                         className={`cursor-pointer rounded-2xl border-2 border-dashed transition-all
               ${dragging ? 'border-indigo-400 bg-indigo-50/60' : 'border-slate-200 hover:border-indigo-300 hover:bg-indigo-50/10'}`}

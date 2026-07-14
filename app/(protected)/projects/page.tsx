@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Plus, Building2, ChevronRight, Loader2, Trash2, Eye, Pencil, ImageIcon, Film, LayoutGrid, MapPin } from 'lucide-react';
 import { listProjects, createProject, deleteProject } from '@/lib/projectApi';
 import type { ProjectDoc, ProjectStatus } from '@/types/project';
+import { useModal } from '@/context/ModalContext';
 
 const STATUS_COLORS: Record<ProjectStatus, string> = {
     upcoming: 'bg-sky-50 text-sky-600 border-sky-100',
@@ -24,6 +25,7 @@ export default function ProjectsPage() {
     const [creating, setCreating] = useState(false);
     const [tab, setTab] = useState<'all' | 'create'>('all');
     const [deletingId, setDeletingId] = useState<string | null>(null);
+    const { showAlert, showConfirm } = useModal();
 
     const [form, setForm] = useState({
         title: '', headline: '', status: 'upcoming' as ProjectStatus, shortIntro: '', address: '', estYear: '', featured: false, category: '', area: '', units: 0
@@ -36,7 +38,8 @@ export default function ProjectsPage() {
             .finally(() => setLoading(false));
     }, []);
 
-    const handleCreate = async () => {
+    const handleCreate = async (e: React.FormEvent) => {
+        e.preventDefault();
         if (!form.title.trim()) return;
         setCreating(true);
         try {
@@ -44,21 +47,24 @@ export default function ProjectsPage() {
             setProjects((prev) => [project, ...prev]);
             setTab('all');
             setForm({ title: '', headline: '', status: 'upcoming', shortIntro: '', address: '', estYear: '', featured: false, category: '', area: '', units: 0 });
+            showAlert('Created', `Project "${project.title}" has been created successfully.`, 'success');
         } catch (err) {
-            alert(err instanceof Error ? err.message : 'Create failed');
+            showAlert('Error', err instanceof Error ? err.message : 'Create failed', 'error');
         } finally {
             setCreating(false);
         }
     };
 
     const handleDelete = async (id: string, title: string) => {
-        if (!confirm(`Delete project "${title}"? This will remove all media from Cloudinary.`)) return;
+        const confirmed = await showConfirm('Delete Project', `Delete project "${title}"? This will remove all media from Cloudinary.`);
+        if (!confirmed) return;
         setDeletingId(id);
         try {
             await deleteProject(id);
             setProjects((prev) => prev.filter((p) => p._id !== id));
+            showAlert('Deleted', `Project "${title}" has been deleted.`, 'success');
         } catch (err) {
-            alert(err instanceof Error ? err.message : 'Delete failed');
+            showAlert('Error', err instanceof Error ? err.message : 'Delete failed', 'error');
         } finally {
             setDeletingId(null);
         }

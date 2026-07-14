@@ -4,6 +4,7 @@ import { connectDB } from '@/lib/mongodb';
 import BlogPost from '@/models/BlogPost';
 import { uploadBuffer, deleteFromCloudinary } from '@/lib/cloudinary';
 import { getCurrentUser, isManager, isPrivileged } from '@/lib/authUtils';
+import { requireAuth } from '@/lib/apiGuard';
 import { createManagerNotification } from '@/lib/notificationUtils';
 
 type Params = { params: Promise<{ id: string }> };
@@ -16,6 +17,15 @@ export async function GET(req: NextRequest, { params }: Params) {
             ? await BlogPost.findById(id)
             : await BlogPost.findOne({ slug: id });
         if (!post) return NextResponse.json({ error: 'Post not found' }, { status: 404 });
+
+        // Enforce draft content safety
+        if (post.status === 'draft') {
+            const currentUser = await getCurrentUser(req);
+            if (!currentUser || !isPrivileged(currentUser)) {
+                return NextResponse.json({ error: 'Forbidden: You do not have permission to view drafts' }, { status: 403 });
+            }
+        }
+
         return NextResponse.json(post);
     } catch (err: any) {
         return NextResponse.json({ error: err.message }, { status: 500 });
@@ -24,7 +34,10 @@ export async function GET(req: NextRequest, { params }: Params) {
 
 export async function PATCH(req: NextRequest, { params }: Params) {
     try {
+        const guard = await requireAuth(req);
+        if (guard) return guard;
         const currentUser = await getCurrentUser(req);
+
         const { id } = await params;
         const formData = await req.formData();
         
@@ -33,11 +46,14 @@ export async function PATCH(req: NextRequest, { params }: Params) {
         if (!post) return NextResponse.json({ error: 'Post not found' }, { status: 404 });
 
         // Update basic fields
-        const fields = ['title', 'description', 'category', 'status', 'videoUrl'];
+        const fields = ['title', 'description', 'excerpt', 'category', 'status', 'videoUrl', 'author', 'authorRole', 'readTime'];
         fields.forEach(field => {
             const val = formData.get(field);
             if (val !== null) (post as any)[field] = val;
         });
+
+        const featured = formData.get('featured');
+        if (featured !== null) post.featured = featured === 'true';
 
         const tags = formData.get('tags');
         if (tags) post.tags = JSON.parse(tags as string);
@@ -63,14 +79,12 @@ export async function PATCH(req: NextRequest, { params }: Params) {
         await post.save();
 
         // ── Privileged Action Notification ──────────────────────────────
-        if (currentUser && isPrivileged(currentUser)) {
-            await createManagerNotification(
-                currentUser._id.toString(),
-                currentUser.name,
-                'updated blog post',
-                post.title
-            );
-        }
+        await createManagerNotification(
+            currentUser._id.toString(),
+            currentUser.name,
+            'updated blog post',
+            post.title
+        );
         return NextResponse.json(post);
     } catch (err: any) {
         return NextResponse.json({ error: err.message }, { status: 500 });
@@ -79,7 +93,10 @@ export async function PATCH(req: NextRequest, { params }: Params) {
 
 export async function DELETE(req: NextRequest, { params }: Params) {
     try {
+        const guard = await requireAuth(req);
+        if (guard) return guard;
         const currentUser = await getCurrentUser(req);
+
         const { id } = await params;
         await connectDB();
         const post = await BlogPost.findById(id);
@@ -90,14 +107,12 @@ export async function DELETE(req: NextRequest, { params }: Params) {
         await BlogPost.findByIdAndDelete(id);
 
         // ── Privileged Action Notification ──────────────────────────────
-        if (currentUser && isPrivileged(currentUser)) {
-            await createManagerNotification(
-                currentUser._id.toString(),
-                currentUser.name,
-                'deleted blog post',
-                postTitle
-            );
-        }
+        await createManagerNotification(
+            currentUser._id.toString(),
+            currentUser.name,
+            'deleted blog post',
+            postTitle
+        );
         return NextResponse.json({ message: 'Post deleted successfully' });
     } catch (err: any) {
         return NextResponse.json({ error: err.message }, { status: 500 });

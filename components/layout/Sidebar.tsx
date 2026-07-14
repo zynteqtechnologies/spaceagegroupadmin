@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import {
   LayoutDashboard, ImageIcon, FolderKanban,
-  FileText, Users, ChevronRight, User2, Aperture, Settings, Milestone, Info, Sparkles
+  FileText, Users, ChevronRight, User2, Aperture, Settings, Milestone, Info, Sparkles, Compass
 } from 'lucide-react';
 
 type NavItem = {
@@ -23,6 +23,7 @@ const mainNav: NavItem[] = [
   { label: 'Media', icon: <Aperture size={18} />, href: '/media' },
   { label: 'Blog', icon: <FileText size={18} />, href: '/blog' },
   { label: 'CSR Posts', icon: <Sparkles size={18} />, href: '/csr' },
+  { label: 'Services', icon: <Compass size={18} />, href: '/services' },
   { label: 'Our Team', icon: <Users size={18} />, href: '/our-team' },
   { label: 'Users', icon: <User2 size={18} />, href: '/users' },
   {

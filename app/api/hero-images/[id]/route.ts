@@ -4,6 +4,7 @@ import { connectDB } from '@/lib/mongodb';
 import { uploadBuffer, deleteFromCloudinary, CloudinaryResult } from '@/lib/cloudinary';
 import HeroImage, { IMediaItem } from '@/models/HeroImage';
 import { type NewMediaDetail } from '@/types/media';
+import { requireAuth } from '@/lib/apiGuard';
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -46,6 +47,9 @@ function buildMediaObject(
 // ── PUT /api/hero-images/:id ──────────────────────────────────────────────────
 export async function PUT(req: NextRequest, { params }: Params) {
   try {
+    const guard = await requireAuth(req);
+    if (guard) return guard;
+
     const { id } = await params; // ✅ await params
 
     await connectDB();
@@ -122,8 +126,11 @@ export async function PUT(req: NextRequest, { params }: Params) {
 }
 
 // ── DELETE /api/hero-images/:id ───────────────────────────────────────────────
-export async function DELETE(_req: NextRequest, { params }: Params) {
+export async function DELETE(req: NextRequest, { params }: Params) {
   try {
+    const guard = await requireAuth(req);
+    if (guard) return guard;
+
     const { id } = await params; // ✅ await params
 
     await connectDB();

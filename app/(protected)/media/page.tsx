@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Plus, Aperture, ChevronRight, Loader2, Trash2, Pencil, Edit, Calendar, Image as ImageIcon, Video, FolderOpen, FileText, Tag, Youtube } from 'lucide-react';
 import { listMedia, deleteMedia } from '@/lib/mediaApi';
 import type { MediaDoc } from '@/types/media';
+import { useModal } from '@/context/ModalContext';
 
 const extractYoutubeId = (url: string) => {
     const regExp = /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/;
@@ -16,6 +17,7 @@ export default function MediaPage() {
     const [mediaList, setMediaList] = useState<MediaDoc[]>([]);
     const [loading, setLoading] = useState(true);
     const [deletingId, setDeletingId] = useState<string | null>(null);
+    const { showAlert, showConfirm } = useModal();
 
     useEffect(() => {
         listMedia()
@@ -25,13 +27,15 @@ export default function MediaPage() {
     }, []);
 
     const handleDelete = async (id: string, title: string) => {
-        if (!confirm(`Delete media collection "${title}"?`)) return;
+        const confirmed = await showConfirm('Delete Media Collection', `Delete media collection "${title}"?`);
+        if (!confirmed) return;
         setDeletingId(id);
         try {
             await deleteMedia(id);
             setMediaList((prev) => prev.filter((m) => m._id !== id));
+            showAlert('Deleted', `Media collection "${title}" has been deleted.`, 'success');
         } catch (err) {
-            alert(err instanceof Error ? err.message : 'Delete failed');
+            showAlert('Error', err instanceof Error ? err.message : 'Delete failed', 'error');
         } finally {
             setDeletingId(null);
         }

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Plus, Trash2, Loader2, Save, GripVertical } from 'lucide-react';
 import { updateSpecifications } from '@/lib/projectApi';
 import type { ProjectDoc, SpecificationItem } from '@/types/project';
+import { useModal } from '@/context/ModalContext';
 
 interface Props { project: ProjectDoc; onUpdate: (doc: ProjectDoc) => void; }
 
@@ -12,6 +13,7 @@ function SpecsEditor({ project, onUpdate, type, title, description }: Props & { 
     const [items, setItems] = useState<SpecificationItem[]>(initial ?? []);
     const [saving, setSaving] = useState(false);
     const [saved, setSaved] = useState(false);
+    const { showAlert } = useModal();
 
     const addRow = () => setItems(prev => [...prev, { label: '', value: '', order: prev.length }]);
 
@@ -27,9 +29,10 @@ function SpecsEditor({ project, onUpdate, type, title, description }: Props & { 
             const updated = await updateSpecifications(project._id, type, items);
             onUpdate(updated);
             setSaved(true);
+            showAlert('Saved', 'Specifications have been saved successfully.', 'success');
             setTimeout(() => setSaved(false), 2000);
         } catch (err) {
-            alert(err instanceof Error ? err.message : 'Save failed');
+            showAlert('Error', err instanceof Error ? err.message : 'Save failed', 'error');
         } finally {
             setSaving(false);
         }

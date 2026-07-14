@@ -2,9 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import User from '@/models/User';
 import { getCurrentUser, isAdministrator } from '@/lib/authUtils';
+import { requireAuth } from '@/lib/apiGuard';
 
-export async function GET() {
+export async function GET(req: NextRequest) {
     try {
+        const guard = await requireAuth(req, 'administrator');
+        if (guard) return guard;
+
         await connectDB();
         const users = await User.find({ role: { $in: ['administrator', 'manager'] } }).select('-password').sort({ createdAt: -1 });
         return NextResponse.json(users);
@@ -15,10 +19,8 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
     try {
-        const currentUser = await getCurrentUser(req);
-        if (!currentUser || !isAdministrator(currentUser)) {
-            return NextResponse.json({ error: 'Permission denied. Only Administrators can create users.' }, { status: 403 });
-        }
+        const guard = await requireAuth(req, 'administrator');
+        if (guard) return guard;
 
         await connectDB();
         const { name, email, password, role } = await req.json();

@@ -4,9 +4,13 @@ import { connectDB } from '@/lib/mongodb';
 import Notification from '@/models/Notification';
 import BlogPost from '@/models/BlogPost';
 import User from '@/models/User';
+import { requireAuth } from '@/lib/apiGuard';
 
-export async function GET() {
+export async function GET(req: NextRequest) {
     try {
+        const guard = await requireAuth(req);
+        if (guard) return guard;
+
         // Reference models to prevent compiler optimization from stripping unused imports
         const _registeredModels = [BlogPost, User];
 
@@ -23,6 +27,9 @@ export async function GET() {
 
 export async function PATCH(req: NextRequest) {
     try {
+        const guard = await requireAuth(req);
+        if (guard) return guard;
+
         const { id, all } = await req.json();
         await connectDB();
 

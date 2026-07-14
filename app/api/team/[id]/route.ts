@@ -4,6 +4,7 @@ import { connectDB } from '@/lib/mongodb';
 import TeamMember from '@/models/TeamMember';
 import { uploadBuffer, deleteFromCloudinary } from '@/lib/cloudinary';
 import { getCurrentUser, isManager, isPrivileged } from '@/lib/authUtils';
+import { requireAuth } from '@/lib/apiGuard';
 import { createManagerNotification } from '@/lib/notificationUtils';
 
 type Params = { params: Promise<{ id: string }> };
@@ -22,7 +23,10 @@ export async function GET(req: NextRequest, { params }: Params) {
 
 export async function PATCH(req: NextRequest, { params }: Params) {
     try {
+        const guard = await requireAuth(req);
+        if (guard) return guard;
         const currentUser = await getCurrentUser(req);
+
         const { id } = await params;
         const formData = await req.formData();
         
@@ -73,14 +77,12 @@ export async function PATCH(req: NextRequest, { params }: Params) {
         await member.save();
 
         // ── Privileged Action Notification ──────────────────────────────
-        if (currentUser && isPrivileged(currentUser)) {
-            await createManagerNotification(
-                currentUser._id.toString(),
-                currentUser.name,
-                'updated team member',
-                member.name
-            );
-        }
+        await createManagerNotification(
+            currentUser._id.toString(),
+            currentUser.name,
+            'updated team member',
+            member.name
+        );
         return NextResponse.json(member);
     } catch (err: any) {
         return NextResponse.json({ error: err.message }, { status: 500 });
@@ -89,7 +91,10 @@ export async function PATCH(req: NextRequest, { params }: Params) {
 
 export async function DELETE(req: NextRequest, { params }: Params) {
     try {
+        const guard = await requireAuth(req);
+        if (guard) return guard;
         const currentUser = await getCurrentUser(req);
+
         const { id } = await params;
         await connectDB();
         const member = await TeamMember.findById(id);
@@ -102,14 +107,12 @@ export async function DELETE(req: NextRequest, { params }: Params) {
         await TeamMember.findByIdAndDelete(id);
 
         // ── Privileged Action Notification ──────────────────────────────
-        if (currentUser && isPrivileged(currentUser)) {
-            await createManagerNotification(
-                currentUser._id.toString(),
-                currentUser.name,
-                'deleted team member',
-                memberName
-            );
-        }
+        await createManagerNotification(
+            currentUser._id.toString(),
+            currentUser.name,
+            'deleted team member',
+            memberName
+        );
         return NextResponse.json({ message: 'Member deleted successfully' });
     } catch (err: any) {
         return NextResponse.json({ error: err.message }, { status: 500 });

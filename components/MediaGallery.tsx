@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Trash2, Star, Video, X, ChevronLeft, ChevronRight, Maximize2, LayoutGrid, FileText } from 'lucide-react';
 import { deleteMediaItem } from '@/lib/mediaApi';
 import type { HeroImageDoc, MediaItem } from '@/types/media';
+import { useModal } from '@/context/ModalContext';
 
 interface MediaGalleryProps {
   doc: HeroImageDoc;
@@ -14,6 +15,7 @@ export default function MediaGallery({ doc, onUpdate }: MediaGalleryProps) {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [filter, setFilter] = useState<'all' | 'image' | 'video'>('all');
+  const { showAlert, showConfirm } = useModal();
 
   const allImages = doc.images ?? [];
   const filtered = filter === 'all' ? allImages : allImages.filter(m => m.mediaType === filter);
@@ -21,13 +23,15 @@ export default function MediaGallery({ doc, onUpdate }: MediaGalleryProps) {
 
   const handleDelete = async (media: MediaItem) => {
     if (!media._id) return;
-    if (!confirm(`Delete "${media.title}"?`)) return;
+    const confirmed = await showConfirm('Delete Media', `Delete "${media.title}"?`);
+    if (!confirmed) return;
     setDeleting(media._id);
     try {
       const updated = await deleteMediaItem(doc._id, media._id);
       onUpdate?.(updated);
+      showAlert('Deleted', `Media "${media.title}" has been deleted.`, 'success');
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Delete failed');
+      showAlert('Error', err instanceof Error ? err.message : 'Delete failed', 'error');
     } finally {
       setDeleting(null);
     }

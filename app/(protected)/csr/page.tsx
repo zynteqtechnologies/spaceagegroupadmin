@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Sparkles, Plus, Pencil, Trash2, Loader2, ChevronRight, Heart } from 'lucide-react';
+import { useModal } from '@/context/ModalContext';
 
 interface CSRPost {
     _id: string;
@@ -23,6 +24,7 @@ export default function CSRListPage() {
     const [posts, setPosts] = useState<CSRPost[]>([]);
     const [loading, setLoading] = useState(true);
     const [deletingId, setDeletingId] = useState<string | null>(null);
+    const { showAlert, showConfirm } = useModal();
 
     const fetchPosts = () => {
         fetch('/api/csr')
@@ -39,14 +41,16 @@ export default function CSRListPage() {
     }, []);
 
     const handleDelete = async (id: string, title: string) => {
-        if (!confirm(`Are you sure you want to delete the CSR post "${title}"?`)) return;
+        const confirmed = await showConfirm('Delete CSR Post', `Are you sure you want to delete the CSR post "${title}"?`);
+        if (!confirmed) return;
         setDeletingId(id);
         try {
             const res = await fetch(`/api/csr/${id}`, { method: 'DELETE' });
             if (!res.ok) throw new Error('Failed to delete CSR post');
             setPosts(posts.filter(p => p._id !== id));
+            showAlert('Deleted', `CSR post "${title}" has been deleted.`, 'success');
         } catch (err: any) {
-            alert(err.message);
+            showAlert('Error', err.message || 'Failed to delete CSR post', 'error');
         } finally {
             setDeletingId(null);
         }

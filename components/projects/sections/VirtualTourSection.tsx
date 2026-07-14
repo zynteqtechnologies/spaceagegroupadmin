@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Loader2, Save, Trash2, Play, ExternalLink } from 'lucide-react';
 import { updateVirtualTour, deleteVirtualTour } from '@/lib/projectApi';
 import type { ProjectDoc, VirtualTour, VirtualTourType } from '@/types/project';
+import { useModal } from '@/context/ModalContext';
 
 interface Props { project: ProjectDoc; onUpdate: (doc: ProjectDoc) => void; }
 
@@ -14,24 +15,25 @@ const TOUR_TYPES: { value: VirtualTourType; label: string; hint: string }[] = [
     { value: 'other', label: 'Other', hint: 'Direct embed URL' },
 ];
 
-function extractYouTubeEmbed(url: string): string {
-    const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\s]+)/);
-    if (match) return `https://www.youtube.com/embed/${match[1]}`;
-    return url;
-}
-
 export default function VirtualTourSection({ project, onUpdate }: Props) {
     const existing = project.virtualTour;
-    const [form, setForm] = useState<VirtualTour>({
-        embedUrl: existing?.embedUrl ?? '',
-        type: existing?.type ?? 'youtube',
-        thumbnailUrl: existing?.thumbnailUrl ?? '',
-        description: existing?.description ?? '',
-    });
     const [saving, setSaving] = useState(false);
     const [deleting, setDeleting] = useState(false);
     const [saved, setSaved] = useState(false);
+    const [form, setForm] = useState<Partial<VirtualTour>>(project.virtualTour ?? {
+        embedUrl: '',
+        type: 'youtube',
+        thumbnailUrl: '',
+        description: '',
+    });
+    const { showAlert, showConfirm } = useModal();
     const [preview, setPreview] = useState(false);
+
+    const extractYouTubeEmbed = (url: string) => {
+        const regExp = /^.*(youtu.be\/|v\/|u\/\\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+        const match = url.match(regExp);
+        return (match && match[2].length === 11) ? `https://www.youtube.com/embed/${match[2]}` : url;
+    };
 
     const processUrl = (url: string, type: VirtualTourType) => {
         if (type === 'youtube') return extractYouTubeEmbed(url);
@@ -43,29 +45,32 @@ export default function VirtualTourSection({ project, onUpdate }: Props) {
         setSaving(true);
         try {
             const toSave: VirtualTour = {
-                ...form,
+                ...form as VirtualTour,
                 embedUrl: processUrl(form.embedUrl ?? '', form.type ?? 'youtube'),
             };
             const updated = await updateVirtualTour(project._id, toSave);
             onUpdate(updated);
             setSaved(true);
+            showAlert('Saved', 'Virtual tour has been saved successfully.', 'success');
             setTimeout(() => setSaved(false), 2000);
         } catch (err) {
-            alert(err instanceof Error ? err.message : 'Save failed');
+            showAlert('Error', err instanceof Error ? err.message : 'Save failed', 'error');
         } finally {
             setSaving(false);
         }
     };
 
     const handleDelete = async () => {
-        if (!confirm('Remove virtual tour?')) return;
+        const confirmed = await showConfirm('Remove Virtual Tour', 'Remove virtual tour?');
+        if (!confirmed) return;
         setDeleting(true);
         try {
             const updated = await deleteVirtualTour(project._id);
             onUpdate(updated);
             setForm({ embedUrl: '', type: 'youtube', thumbnailUrl: '', description: '' });
+            showAlert('Removed', 'Virtual tour has been removed.', 'success');
         } catch (err) {
-            alert(err instanceof Error ? err.message : 'Delete failed');
+            showAlert('Error', err instanceof Error ? err.message : 'Delete failed', 'error');
         } finally {
             setDeleting(false);
         }

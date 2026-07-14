@@ -4,6 +4,7 @@ import { connectDB } from '@/lib/mongodb';
 import TeamMember from '@/models/TeamMember';
 import { uploadBuffer } from '@/lib/cloudinary';
 import { getCurrentUser, isManager, isPrivileged } from '@/lib/authUtils';
+import { requireAuth } from '@/lib/apiGuard';
 import { createManagerNotification } from '@/lib/notificationUtils';
 
 export async function GET() {
@@ -18,7 +19,10 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
     try {
+        const guard = await requireAuth(req);
+        if (guard) return guard;
         const currentUser = await getCurrentUser(req);
+
         const formData = await req.formData();
         const name = formData.get('name') as string;
         const position = formData.get('position') as string;
@@ -33,17 +37,17 @@ export async function POST(req: NextRequest) {
         const skillsString = formData.get('skills') as string || '';
         const skills = skillsString.split(',').map(s => s.trim()).filter(Boolean);
         const order = parseInt(formData.get('order') as string || '0');
-        const file = formData.get('image') as File | null;
+        const imageFile = formData.get('image') as File | null;
 
-        if (!name || !position || !file) {
-            return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+        if (!name || !position || !imageFile) {
+            return NextResponse.json({ error: 'Name, position, and profile image are required' }, { status: 400 });
         }
 
         await connectDB();
 
-        // Upload to Cloudinary
-        const buffer = Buffer.from(await file.arrayBuffer());
-        const uploadResult = await uploadBuffer(buffer, file.type, 'team-profiles');
+        // Upload image
+        const buffer = Buffer.from(await imageFile.arrayBuffer());
+        const uploadResult = await uploadBuffer(buffer, imageFile.type, 'team-members');
 
         const member = await TeamMember.create({
             name,
@@ -67,14 +71,12 @@ export async function POST(req: NextRequest) {
         });
 
         // ── Privileged Action Notification ──────────────────────────────
-        if (currentUser && isPrivileged(currentUser)) {
-            await createManagerNotification(
-                currentUser._id.toString(),
-                currentUser.name,
-                'added team member',
-                name
-            );
-        }
+        await createManagerNotification(
+            currentUser._id.toString(),
+            currentUser.name,
+            'added team member',
+            name
+        );
 
         return NextResponse.json(member);
     } catch (err: any) {

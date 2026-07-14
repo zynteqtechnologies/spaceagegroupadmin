@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { 
     ChevronLeft, Loader2, Save, Image as ImageIcon, 
     Video, Type, Tag, Layout, Globe, Lock, 
-    Settings, MessageSquare, Heart, Info
+    Settings, MessageSquare, Heart, Info, AlertCircle, User2, AlignLeft
 } from 'lucide-react';
 import { createBlogPost } from '@/lib/blogApi';
 
@@ -18,13 +18,19 @@ export default function NewPostPage() {
     const [formData, setFormData] = useState({
         title: '',
         description: '',
-        category: '',
+        excerpt: '',
+        category: 'Investment',
         tags: '',
         status: 'published',
         videoUrl: '',
+        author: 'Space Age Group',
+        authorRole: 'Media & Communications',
+        readTime: '5 min read',
+        featured: false,
         allowLikes: true,
         allowComments: true,
     });
+    const [customCategory, setCustomCategory] = useState('');
     const [imageFile, setImageFile] = useState<File | null>(null);
 
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -37,7 +43,8 @@ export default function NewPostPage() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!formData.title || !formData.description || !formData.category || !imageFile) {
+        const finalCategory = formData.category === 'Custom' ? customCategory : formData.category;
+        if (!formData.title || !formData.description || !finalCategory || !imageFile) {
             setError('Title, Description, Category, and Main Image are required.');
             return;
         }
@@ -49,9 +56,14 @@ export default function NewPostPage() {
             const data = new FormData();
             data.append('title', formData.title);
             data.append('description', formData.description);
-            data.append('category', formData.category);
+            data.append('excerpt', formData.excerpt);
+            data.append('category', finalCategory);
             data.append('status', formData.status);
             data.append('videoUrl', formData.videoUrl);
+            data.append('author', formData.author);
+            data.append('authorRole', formData.authorRole);
+            data.append('readTime', formData.readTime);
+            data.append('featured', formData.featured.toString());
             data.append('allowLikes', formData.allowLikes.toString());
             data.append('allowComments', formData.allowComments.toString());
             data.append('image', imageFile);
@@ -86,7 +98,7 @@ export default function NewPostPage() {
                     <button
                         onClick={handleSubmit}
                         disabled={submitting}
-                        className="flex items-center gap-2 bg-slate-900 hover:bg-slate-800 disabled:bg-slate-200 disabled:text-slate-400 text-white font-semibold py-2.5 px-6 rounded-sm text-sm transition-all shadow-sm shrink-0 w-fit"
+                        className="flex items-center gap-2 bg-slate-900 hover:bg-slate-800 disabled:bg-slate-200 disabled:text-slate-400 text-white font-semibold py-2.5 px-6 rounded-sm text-sm transition-all shadow-sm shrink-0 w-fit cursor-pointer"
                     >
                         {submitting ? <><Loader2 size={14} className="animate-spin" /> Publishing…</> : <><Save size={14} /> Publish Content</>}
                     </button>
@@ -143,10 +155,23 @@ export default function NewPostPage() {
 
                         <div className="space-y-1 pt-2">
                             <label className="text-xs font-semibold text-slate-600 uppercase tracking-wide flex items-center gap-1.5 block">
+                                <AlignLeft size={14} className="text-blue-500" /> Short Excerpt / Teaser
+                            </label>
+                            <textarea 
+                                rows={3}
+                                value={formData.excerpt}
+                                onChange={(e) => setFormData({...formData, excerpt: e.target.value})}
+                                placeholder="A brief one or two sentence teaser summary to display on lists..."
+                                className="w-full border border-slate-200 rounded-sm px-4 py-3 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-50 transition-all bg-white resize-none"
+                            />
+                        </div>
+
+                        <div className="space-y-1 pt-2">
+                            <label className="text-xs font-semibold text-slate-600 uppercase tracking-wide flex items-center gap-1.5 block">
                                 <Type size={14} className="text-blue-500" /> Story Content
                             </label>
                             <textarea 
-                                rows={12}
+                                rows={14}
                                 required
                                 value={formData.description}
                                 onChange={(e) => setFormData({...formData, description: e.target.value})}
@@ -177,17 +202,35 @@ export default function NewPostPage() {
                                 </select>
                             </div>
 
-                            <div className="space-y-1">
+                             <div className="space-y-1">
                                 <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block">Category</label>
-                                <input 
-                                    type="text"
-                                    required
+                                <select 
                                     value={formData.category}
                                     onChange={(e) => setFormData({...formData, category: e.target.value})}
-                                    placeholder="e.g. Real Estate News"
-                                    className="w-full border border-slate-200 rounded-sm px-3 py-2 text-sm font-semibold outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-50 transition-all bg-white"
-                                />
+                                    className="w-full border border-slate-200 rounded-sm px-3 py-2 text-sm font-semibold outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-50 transition-all bg-white cursor-pointer"
+                                >
+                                    <option value="News">News</option>
+                                    <option value="Events">Events</option>
+                                    <option value="Investment">Investment</option>
+                                    <option value="Real Estate Tips">Real Estate Tips</option>
+                                    <option value="Community">Community</option>
+                                    <option value="Custom">Custom</option>
+                                </select>
                             </div>
+
+                            {formData.category === 'Custom' && (
+                                <div className="space-y-1">
+                                    <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">Custom Category Name</label>
+                                    <input 
+                                        type="text"
+                                        required
+                                        value={customCategory}
+                                        onChange={(e) => setCustomCategory(e.target.value)}
+                                        placeholder="Enter custom category name..."
+                                        className="w-full border border-slate-200 rounded-sm px-3 py-2 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-50 transition-all bg-white"
+                                    />
+                                </div>
+                            )}
 
                             <div className="space-y-1">
                                 <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-1.5 block">
@@ -197,7 +240,46 @@ export default function NewPostPage() {
                                     type="text"
                                     value={formData.tags}
                                     onChange={(e) => setFormData({...formData, tags: e.target.value})}
-                                    placeholder="luxury, architecture, mumbai"
+                                    placeholder="luxury, appreciation, vadodara"
+                                    className="w-full border border-slate-200 rounded-sm px-3 py-2 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-50 transition-all bg-white"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="pt-6 border-t border-slate-100 space-y-4">
+                            <h3 className="text-xs font-bold text-slate-800 uppercase tracking-widest flex items-center gap-2">
+                                <User2 size={14} className="text-slate-400" /> Author Details
+                            </h3>
+                            
+                            <div className="space-y-1">
+                                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block">Author Name</label>
+                                <input 
+                                    type="text"
+                                    value={formData.author}
+                                    onChange={(e) => setFormData({...formData, author: e.target.value})}
+                                    placeholder="e.g. Taher Zabuawala"
+                                    className="w-full border border-slate-200 rounded-sm px-3 py-2 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-50 transition-all bg-white"
+                                />
+                            </div>
+
+                            <div className="space-y-1">
+                                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block">Author Role / Title</label>
+                                <input 
+                                    type="text"
+                                    value={formData.authorRole}
+                                    onChange={(e) => setFormData({...formData, authorRole: e.target.value})}
+                                    placeholder="e.g. Director, BE Civil · MBA · LLB"
+                                    className="w-full border border-slate-200 rounded-sm px-3 py-2 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-50 transition-all bg-white"
+                                />
+                            </div>
+
+                            <div className="space-y-1">
+                                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block">Read Time</label>
+                                <input 
+                                    type="text"
+                                    value={formData.readTime}
+                                    onChange={(e) => setFormData({...formData, readTime: e.target.value})}
+                                    placeholder="e.g. 5 min read"
                                     className="w-full border border-slate-200 rounded-sm px-3 py-2 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-50 transition-all bg-white"
                                 />
                             </div>
@@ -226,6 +308,19 @@ export default function NewPostPage() {
                             
                             <div className="flex items-center justify-between p-3 bg-slate-50 rounded-sm border border-slate-100">
                                 <div className="flex flex-col">
+                                    <span className="text-[11px] font-bold text-slate-700 uppercase">Featured Post</span>
+                                    <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Pin to top of page</span>
+                                </div>
+                                <input 
+                                    type="checkbox"
+                                    checked={formData.featured}
+                                    onChange={(e) => setFormData({...formData, featured: e.target.checked})}
+                                    className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                                />
+                            </div>
+
+                            <div className="flex items-center justify-between p-3 bg-slate-50 rounded-sm border border-slate-100">
+                                <div className="flex flex-col">
                                     <span className="text-[11px] font-bold text-slate-700 uppercase">Allow Likes</span>
                                     <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Public heart counts</span>
                                 </div>
@@ -233,7 +328,7 @@ export default function NewPostPage() {
                                     type="checkbox"
                                     checked={formData.allowLikes}
                                     onChange={(e) => setFormData({...formData, allowLikes: e.target.checked})}
-                                    className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                                    className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
                                 />
                             </div>
 
@@ -246,7 +341,7 @@ export default function NewPostPage() {
                                     type="checkbox"
                                     checked={formData.allowComments}
                                     onChange={(e) => setFormData({...formData, allowComments: e.target.checked})}
-                                    className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                                    className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
                                 />
                             </div>
                         </div>

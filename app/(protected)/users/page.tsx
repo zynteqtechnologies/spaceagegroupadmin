@@ -9,6 +9,7 @@ import {
     MoreVertical, UserCheck, ShieldAlert
 } from 'lucide-react';
 import { listUsers, deleteUser } from '@/lib/userApi';
+import { useModal } from '@/context/ModalContext';
 
 export default function UsersPage() {
     const { user: currentUser } = useAuth();
@@ -18,6 +19,7 @@ export default function UsersPage() {
     const [loading, setLoading] = useState(true);
     const [deletingId, setDeletingId] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
+    const { showAlert, showConfirm } = useModal();
 
     useEffect(() => {
         loadUsers();
@@ -35,13 +37,15 @@ export default function UsersPage() {
     };
 
     const handleDelete = async (id: string, name: string) => {
-        if (!confirm(`Are you sure you want to delete admin "${name}"?`)) return;
+        const confirmed = await showConfirm('Delete User', `Are you sure you want to delete admin "${name}"?`);
+        if (!confirmed) return;
         setDeletingId(id);
         try {
             await deleteUser(id);
             setUsers(prev => prev.filter(u => u._id !== id));
+            showAlert('Deleted', `Admin user "${name}" has been deleted.`, 'success');
         } catch (err: any) {
-            alert(err.message);
+            showAlert('Error', err.message || 'Failed to delete user', 'error');
         } finally {
             setDeletingId(null);
         }

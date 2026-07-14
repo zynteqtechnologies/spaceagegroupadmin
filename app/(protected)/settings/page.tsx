@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Settings, ChevronRight, Loader2, Save, CheckCircle } from 'lucide-react';
+import { useModal } from '@/context/ModalContext';
 
 export default function SettingsPage() {
     const [form, setForm] = useState({
@@ -14,12 +15,13 @@ export default function SettingsPage() {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [success, setSuccess] = useState(false);
+    const { showAlert } = useModal();
 
     useEffect(() => {
         fetch('/api/settings')
-            .then(res => res.json())
-            .then(data => {
-                if (data && !data.error) {
+            .then((res) => res.json())
+            .then((data) => {
+                if (data) {
                     setForm({
                         yearsOfExcellence: data.yearsOfExcellence || '35+',
                         projectsCompleted: data.projectsCompleted || '120+',
@@ -35,7 +37,6 @@ export default function SettingsPage() {
     const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
         setSaving(true);
-        setSuccess(false);
         try {
             const res = await fetch('/api/settings', {
                 method: 'PUT',
@@ -47,9 +48,10 @@ export default function SettingsPage() {
                 throw new Error(errData.error || 'Failed to save settings');
             }
             setSuccess(true);
+            showAlert('Success', 'About/Journey stats counter saved successfully.', 'success');
             setTimeout(() => setSuccess(false), 3000);
         } catch (err: any) {
-            alert(err.message);
+            showAlert('Error', err.message || 'Failed to save settings', 'error');
         } finally {
             setSaving(false);
         }

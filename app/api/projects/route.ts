@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import Project from '@/models/Project';
 import { getCurrentUser, isManager, isPrivileged } from '@/lib/authUtils';
+import { requireAuth } from '@/lib/apiGuard';
 import { createManagerNotification } from '@/lib/notificationUtils';
 
 // ── GET /api/projects ─────────────────────────────────────────────────────────
@@ -30,7 +31,10 @@ export async function GET(req: NextRequest) {
 // ── POST /api/projects ────────────────────────────────────────────────────────
 export async function POST(req: NextRequest) {
     try {
+        const guard = await requireAuth(req);
+        if (guard) return guard;
         const currentUser = await getCurrentUser(req);
+
         await connectDB();
 
         const body = await req.json();
@@ -69,14 +73,12 @@ export async function POST(req: NextRequest) {
         });
 
         // ── Privileged Action Notification ──────────────────────────────
-        if (currentUser && isPrivileged(currentUser)) {
-            await createManagerNotification(
-                currentUser._id.toString(),
-                currentUser.name,
-                'created a new project',
-                title
-            );
-        }
+        await createManagerNotification(
+            currentUser._id.toString(),
+            currentUser.name,
+            'created a new project',
+            title
+        );
 
         return NextResponse.json(
             { message: 'Project created successfully', project },

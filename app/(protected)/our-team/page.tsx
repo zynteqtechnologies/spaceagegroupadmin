@@ -9,11 +9,13 @@ import {
 } from 'lucide-react';
 import { listTeamMembers, deleteTeamMember } from '@/lib/teamApi';
 import type { TeamMember } from '@/types/team';
+import { useModal } from '@/context/ModalContext';
 
 export default function OurTeamPage() {
     const [members, setMembers] = useState<TeamMember[]>([]);
     const [loading, setLoading] = useState(true);
     const [deletingId, setDeletingId] = useState<string | null>(null);
+    const { showAlert, showConfirm } = useModal();
 
     useEffect(() => {
         loadMembers();
@@ -31,13 +33,15 @@ export default function OurTeamPage() {
     };
 
     const handleDelete = async (id: string, name: string) => {
-        if (!confirm(`Are you sure you want to delete ${name}?`)) return;
+        const confirmed = await showConfirm('Delete Member', `Are you sure you want to delete ${name}?`);
+        if (!confirmed) return;
         setDeletingId(id);
         try {
             await deleteTeamMember(id);
             setMembers(prev => prev.filter(m => m._id !== id));
+            showAlert('Deleted', `Team member ${name} has been deleted.`, 'success');
         } catch (err: any) {
-            alert(err.message);
+            showAlert('Error', err.message || 'Failed to delete team member', 'error');
         } finally {
             setDeletingId(null);
         }
