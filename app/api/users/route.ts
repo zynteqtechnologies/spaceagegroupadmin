@@ -34,11 +34,11 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'User already exists' }, { status: 400 });
         }
 
-        const user = await User.create({ 
-            name, 
-            email, 
-            password, 
-            role: role || 'admin' 
+        const user = await User.create({
+            name,
+            email,
+            password,
+            role: role || 'administrator'
         });
 
         const userResponse = {
