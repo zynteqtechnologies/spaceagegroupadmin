@@ -1,17 +1,24 @@
 // app/api/hero-images/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { connectDB } from '@/lib/mongodb';
+import { connectDB, db } from '@/lib/db';
+import { heroImages } from '@/lib/schema';
+import { eq, desc } from 'drizzle-orm';
 import { uploadBuffer, CloudinaryResult } from '@/lib/cloudinary';
-import HeroImage from '@/models/HeroImage';
 import { type NewMediaDetail } from '@/types/media';
 import { requireAuth } from '@/lib/apiGuard';
+import { redisGet, redisSet, redisDel } from '@/lib/redis';
+import crypto from 'crypto';
 
 // ── GET /api/hero-images ──────────────────────────────────────────────────────
 export async function GET() {
   try {
+    const cacheKey = 'cache:hero-images';
+    const cached = await redisGet(cacheKey);
+    if (cached) return NextResponse.json(cached, { headers: { 'X-Cache': 'HIT' } });
+
     await connectDB();
 
-    const heroImage = await HeroImage.findOne().sort({ createdAt: -1 }).lean();
+    const [heroImage] = await db.select().from(heroImages).orderBy(desc(heroImages.createdAt)).limit(1);
 
     if (!heroImage) {
       return NextResponse.json(
@@ -20,7 +27,9 @@ export async function GET() {
       );
     }
 
-    return NextResponse.json(heroImage);
+    const result = { ...heroImage, _id: heroImage.id };
+    await redisSet(cacheKey, result, 120);
+    return NextResponse.json(result, { headers: { 'X-Cache': 'MISS' } });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Server error';
     console.error('[GET /api/hero-images]', err);
@@ -69,16 +78,34 @@ export async function POST(req: NextRequest) {
       })
     );
 
-    let heroImage = await HeroImage.findOne();
-    if (heroImage) {
-      heroImage.images.push(...mediaObjects);
-      await heroImage.save();
+    let [heroImageRecord] = await db.select().from(heroImages).limit(1);
+    const now = new Date().toISOString();
+
+    if (heroImageRecord) {
+      const updatedImages = [...(heroImageRecord.images as any[]), ...mediaObjects];
+      await db.update(heroImages).set({
+        images: updatedImages,
+        updatedAt: now
+      }).where(eq(heroImages.id, heroImageRecord.id));
+      [heroImageRecord] = await db.select().from(heroImages).where(eq(heroImages.id, heroImageRecord.id)).limit(1);
     } else {
-      heroImage = await HeroImage.create({ images: mediaObjects });
+      const id = crypto.randomUUID();
+      await db.insert(heroImages).values({
+        id,
+        images: mediaObjects,
+        createdAt: now,
+        updatedAt: now
+      });
+      [heroImageRecord] = await db.select().from(heroImages).where(eq(heroImages.id, id)).limit(1);
     }
 
+    const responseObj = {
+      ...heroImageRecord,
+      _id: heroImageRecord.id
+    };
+
     return NextResponse.json(
-      { message: 'Uploaded successfully', heroImage },
+      { message: 'Uploaded successfully', heroImage: responseObj },
       { status: 201 }
     );
   } catch (err: unknown) {

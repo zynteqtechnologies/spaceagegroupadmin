@@ -1,10 +1,13 @@
 // app/api/auth/register/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import connectDB from '@/lib/db';
-import User from '@/models/User';
+import connectDB, { db } from '@/lib/db';
+import { users } from '@/lib/schema';
+import { eq } from 'drizzle-orm';
 import jwt from 'jsonwebtoken';
 import { serialize } from 'cookie';
 import { checkRateLimit } from '@/lib/rateLimit';
+import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
 
 export async function POST(req: NextRequest) {
   try {
@@ -14,21 +17,33 @@ export async function POST(req: NextRequest) {
     await connectDB();
     
     // Prevent registration if there is already at least one user in the database
-    const userCount = await User.countDocuments();
-    if (userCount > 0) {
+    const existingUsers = await db.select().from(users).limit(1);
+    if (existingUsers.length > 0) {
       return NextResponse.json({ error: 'Registration is disabled. Please ask an administrator to create your account.' }, { status: 403 });
     }
 
     const { name, email, password } = await req.json();
 
-    const existingUser = await User.findOne({ email });
+    const [existingUser] = await db.select().from(users).where(eq(users.email, email)).limit(1);
     if (existingUser) {
       return NextResponse.json({ error: 'User already exists' }, { status: 400 });
     }
 
-    const user = await User.create({ name, email, password });
+    const id = crypto.randomUUID();
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const now = new Date().toISOString();
 
-    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET!, { expiresIn: '7d' });
+    await db.insert(users).values({
+      id,
+      name,
+      email,
+      password: hashedPassword,
+      role: 'administrator', // The first registered user gets administrator role
+      createdAt: now,
+      updatedAt: now
+    });
+
+    const token = jwt.sign({ userId: id }, process.env.JWT_SECRET!, { expiresIn: '7d' });
 
     // Set cookie
     const cookie = serialize('token', token, {
@@ -40,7 +55,7 @@ export async function POST(req: NextRequest) {
     });
 
     const response = NextResponse.json(
-      { user: { id: user._id, name, email } },
+      { user: { id: id, name, email } },
       { status: 201 }
     );
     response.headers.set('Set-Cookie', cookie);

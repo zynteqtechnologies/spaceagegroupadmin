@@ -1,20 +1,44 @@
 // app/api/media/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { connectDB } from '@/lib/mongodb';
-import Media from '@/models/Media';
-import Project from '@/models/Project';
-import { uploadBuffer } from '@/lib/cloudinary';
+import { connectDB, db } from '@/lib/db';
+import { media, projects } from '@/lib/schema';
+import { eq, desc } from 'drizzle-orm';
 import { MediaItem } from '@/types/project';
 import { getCurrentUser, isManager, isPrivileged } from '@/lib/authUtils';
 import { requireAuth } from '@/lib/apiGuard';
 import { createManagerNotification } from '@/lib/notificationUtils';
+import { uploadBuffer } from '@/lib/cloudinary';
+import crypto from 'crypto';
 
 // ── GET /api/media ────────────────────────────────────────────────────────────
 export async function GET() {
     try {
         await connectDB();
-        const media = await Media.find().populate('project', 'title slug').sort({ createdAt: -1 });
-        return NextResponse.json(media);
+        
+        const rows = await db.select({
+            mediaRecord: media,
+            projectRecord: {
+                id: projects.id,
+                title: projects.title,
+                slug: projects.slug
+            }
+        })
+        .from(media)
+        .leftJoin(projects, eq(media.project, projects.id))
+        .orderBy(desc(media.createdAt));
+
+        const mappedMedia = rows.map(row => ({
+            ...row.mediaRecord,
+            _id: row.mediaRecord.id,
+            project: row.projectRecord ? {
+                _id: row.projectRecord.id,
+                id: row.projectRecord.id,
+                title: row.projectRecord.title,
+                slug: row.projectRecord.slug
+            } : null
+        }));
+
+        return NextResponse.json(mappedMedia);
     } catch (err: unknown) {
         const message = err instanceof Error ? err.message : 'Server error';
         return NextResponse.json({ error: message }, { status: 500 });
@@ -27,6 +51,7 @@ export async function POST(req: NextRequest) {
         const guard = await requireAuth(req);
         if (guard) return guard;
         const currentUser = await getCurrentUser(req);
+        if (!currentUser) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
         await connectDB();
         const formData = await req.formData();
@@ -40,7 +65,7 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Project and Title are required' }, { status: 400 });
         }
 
-        const project = await Project.findById(projectId);
+        const [project] = await db.select().from(projects).where(eq(projects.id, projectId)).limit(1);
         if (!project) {
             return NextResponse.json({ error: 'Project not found' }, { status: 404 });
         }
@@ -49,7 +74,7 @@ export async function POST(req: NextRequest) {
         const newDetailsRaw = formData.get('newDetails') as string;
         const newDetails = JSON.parse(newDetailsRaw || '[]') as any[];
 
-        // Cloudinary folder structure: media/[project.title]/uploads
+        // Folder structure: media/[project.title]/uploads
         const folderName = `media/${project.title}/uploads`;
 
         // Find detail blocks matching actual file indices (excluding youtube)
@@ -77,7 +102,7 @@ export async function POST(req: NextRequest) {
                     fileSize: result.bytes,
                     duration: result.duration ?? null,
                     thumbnail: detail.thumbnail || (isVideo ? result.secure_url.replace(/\.[^/.]+$/, '.jpg') 
-                             : isPdf ? 'https://res.cloudinary.com/demo/image/upload/v1/pdf_logo.png' // Placeholder or generated
+                             : isPdf ? 'https://res.cloudinary.com/demo/image/upload/v1/pdf_logo.png' 
                              : null),
                     subCategory: detail.subCategory || null,
                 };
@@ -99,11 +124,20 @@ export async function POST(req: NextRequest) {
                 subCategory: detail.subCategory || null,
             }));
 
-        const media = await Media.create({
+        const id = crypto.randomUUID();
+        const now = new Date().toISOString();
+
+        await db.insert(media).values({
+            id,
             project: projectId,
             title,
             items: [...existingItems, ...newItems, ...youtubeItems] as any,
+            createdAt: now,
+            updatedAt: now
         });
+
+        const [mediaRecord] = await db.select().from(media).where(eq(media.id, id)).limit(1);
+        const responseObj = { ...mediaRecord, _id: mediaRecord.id };
 
         // ── Privileged Action Notification ──────────────────────────────
         await createManagerNotification(
@@ -113,7 +147,7 @@ export async function POST(req: NextRequest) {
             project.title
         );
 
-        return NextResponse.json(media, { status: 201 });
+        return NextResponse.json(responseObj, { status: 201 });
     } catch (err: unknown) {
         const message = err instanceof Error ? err.message : 'Server error';
         console.error('[POST /api/media]', err);

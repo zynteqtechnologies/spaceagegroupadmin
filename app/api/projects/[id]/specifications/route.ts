@@ -1,8 +1,9 @@
 // app/api/projects/[id]/specifications/route.ts
 // Handles both common and commercial specs via query param ?type=common|commercial
 import { NextRequest, NextResponse } from 'next/server';
-import { connectDB } from '@/lib/mongodb';
-import Project from '@/models/Project';
+import { connectDB, db } from '@/lib/db';
+import { projects } from '@/lib/schema';
+import { eq } from 'drizzle-orm';
 import { SpecificationItem } from '@/types/project';
 
 type Params = { params: Promise<{ id: string }> };
@@ -18,7 +19,11 @@ export async function GET(req: NextRequest, { params }: Params) {
         const type = new URL(req.url).searchParams.get('type');
         await connectDB();
 
-        const project = await Project.findById(id).select('commonSpecifications commercialSpecifications').lean();
+        const [project] = await db.select({
+            commonSpecifications: projects.commonSpecifications,
+            commercialSpecifications: projects.commercialSpecifications
+        }).from(projects).where(eq(projects.id, id)).limit(1);
+
         if (!project) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
         const field = getSpecField(type);
@@ -36,7 +41,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
         const type = new URL(req.url).searchParams.get('type');
         await connectDB();
 
-        const project = await Project.findById(id);
+        const [project] = await db.select().from(projects).where(eq(projects.id, id)).limit(1);
         if (!project) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
         const body = await req.json();
@@ -50,10 +55,15 @@ export async function PUT(req: NextRequest, { params }: Params) {
             order: item.order ?? i,
         })).filter(item => item.label && item.value);
 
-        project.set(field, ordered);
-        await project.save();
+        await db.update(projects).set({
+            [field]: ordered,
+            updatedAt: new Date().toISOString()
+        }).where(eq(projects.id, id));
 
-        return NextResponse.json({ message: 'Specifications updated', project });
+        const [updatedProject] = await db.select().from(projects).where(eq(projects.id, id)).limit(1);
+        const responseObj = { ...updatedProject, _id: updatedProject.id };
+
+        return NextResponse.json({ message: 'Specifications updated', project: responseObj });
     } catch (err: unknown) {
         return NextResponse.json({ error: err instanceof Error ? err.message : 'Server error' }, { status: 500 });
     }

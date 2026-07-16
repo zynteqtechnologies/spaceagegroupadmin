@@ -1,7 +1,8 @@
 // app/api/projects/[id]/amenities/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { connectDB } from '@/lib/mongodb';
-import Project from '@/models/Project';
+import { connectDB, db } from '@/lib/db';
+import { projects } from '@/lib/schema';
+import { eq } from 'drizzle-orm';
 import { AmenityItem } from '@/types/project';
 
 type Params = { params: Promise<{ id: string }> };
@@ -10,7 +11,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
     try {
         const { id } = await params;
         await connectDB();
-        const project = await Project.findById(id).select('amenities').lean();
+        const [project] = await db.select({ amenities: projects.amenities }).from(projects).where(eq(projects.id, id)).limit(1);
         if (!project) return NextResponse.json({ error: 'Not found' }, { status: 404 });
         return NextResponse.json(project.amenities ?? []);
     } catch (err: unknown) {
@@ -24,7 +25,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
         const { id } = await params;
         await connectDB();
 
-        const project = await Project.findById(id);
+        const [project] = await db.select().from(projects).where(eq(projects.id, id)).limit(1);
         if (!project) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
         const body = await req.json();
@@ -37,10 +38,15 @@ export async function PUT(req: NextRequest, { params }: Params) {
             order: item.order ?? i,
         })).filter(item => item.name);
 
-        project.set('amenities', ordered);
-        await project.save();
+        await db.update(projects).set({
+            amenities: ordered,
+            updatedAt: new Date().toISOString()
+        }).where(eq(projects.id, id));
 
-        return NextResponse.json({ message: 'Amenities updated', project });
+        const [updatedProject] = await db.select().from(projects).where(eq(projects.id, id)).limit(1);
+        const responseObj = { ...updatedProject, _id: updatedProject.id };
+
+        return NextResponse.json({ message: 'Amenities updated', project: responseObj });
     } catch (err: unknown) {
         return NextResponse.json({ error: err instanceof Error ? err.message : 'Server error' }, { status: 500 });
     }

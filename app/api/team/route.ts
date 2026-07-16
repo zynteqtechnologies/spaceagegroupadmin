@@ -1,17 +1,30 @@
 // app/api/team/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { connectDB } from '@/lib/mongodb';
-import TeamMember from '@/models/TeamMember';
+import { connectDB, db } from '@/lib/db';
+import { teamMembers } from '@/lib/schema';
+import { eq, asc, desc } from 'drizzle-orm';
 import { uploadBuffer } from '@/lib/cloudinary';
 import { getCurrentUser, isManager, isPrivileged } from '@/lib/authUtils';
 import { requireAuth } from '@/lib/apiGuard';
 import { createManagerNotification } from '@/lib/notificationUtils';
+import { redisGet, redisSet, redisDel } from '@/lib/redis';
+import crypto from 'crypto';
 
 export async function GET() {
     try {
+        const cacheKey = 'cache:team';
+        const cached = await redisGet(cacheKey);
+        if (cached) return NextResponse.json(cached, { headers: { 'X-Cache': 'HIT' } });
+
         await connectDB();
-        const members = await TeamMember.find().sort({ order: 1, createdAt: -1 });
-        return NextResponse.json(members);
+        const members = await db.select()
+            .from(teamMembers)
+            .orderBy(asc(teamMembers.order), desc(teamMembers.createdAt));
+
+        const mappedMembers = members.map(m => ({ ...m, _id: m.id }));
+
+        await redisSet(cacheKey, mappedMembers, 120);
+        return NextResponse.json(mappedMembers, { headers: { 'X-Cache': 'MISS' } });
     } catch (err: any) {
         return NextResponse.json({ error: err.message }, { status: 500 });
     }
@@ -22,6 +35,7 @@ export async function POST(req: NextRequest) {
         const guard = await requireAuth(req);
         if (guard) return guard;
         const currentUser = await getCurrentUser(req);
+        if (!currentUser) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
         const formData = await req.formData();
         const name = formData.get('name') as string;
@@ -49,7 +63,11 @@ export async function POST(req: NextRequest) {
         const buffer = Buffer.from(await imageFile.arrayBuffer());
         const uploadResult = await uploadBuffer(buffer, imageFile.type, 'team-members');
 
-        const member = await TeamMember.create({
+        const id = crypto.randomUUID();
+        const now = new Date().toISOString();
+
+        await db.insert(teamMembers).values({
+            id,
             name,
             position,
             study,
@@ -61,14 +79,19 @@ export async function POST(req: NextRequest) {
                 cloudinaryId: uploadResult.public_id
             },
             socialLinks: {
-                linkedin,
-                instagram,
-                facebook
+                linkedin: linkedin || '',
+                instagram: instagram || '',
+                facebook: facebook || ''
             },
             taglineThought,
             skills,
-            order
+            order,
+            createdAt: now,
+            updatedAt: now
         });
+
+        const [member] = await db.select().from(teamMembers).where(eq(teamMembers.id, id)).limit(1);
+        const responseObj = { ...member, _id: member.id };
 
         // ── Privileged Action Notification ──────────────────────────────
         await createManagerNotification(
@@ -78,7 +101,7 @@ export async function POST(req: NextRequest) {
             name
         );
 
-        return NextResponse.json(member);
+        return NextResponse.json(responseObj);
     } catch (err: any) {
         return NextResponse.json({ error: err.message }, { status: 500 });
     }

@@ -1,9 +1,8 @@
 // app/api/notifications/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { connectDB } from '@/lib/mongodb';
-import Notification from '@/models/Notification';
-import BlogPost from '@/models/BlogPost';
-import User from '@/models/User';
+import { connectDB, db } from '@/lib/db';
+import { notifications, users } from '@/lib/schema';
+import { eq, desc } from 'drizzle-orm';
 import { requireAuth } from '@/lib/apiGuard';
 
 export async function GET(req: NextRequest) {
@@ -11,15 +10,34 @@ export async function GET(req: NextRequest) {
         const guard = await requireAuth(req);
         if (guard) return guard;
 
-        // Reference models to prevent compiler optimization from stripping unused imports
-        const _registeredModels = [BlogPost, User];
-
         await connectDB();
-        const notifications = await Notification.find()
-            .populate('postId', 'title')
-            .sort({ createdAt: -1 })
-            .limit(20);
-        return NextResponse.json(notifications);
+        const records = await db.select({
+            id: notifications.id,
+            userId: notifications.userId,
+            managerName: notifications.managerName,
+            action: notifications.action,
+            target: notifications.target,
+            isRead: notifications.isRead,
+            createdAt: notifications.createdAt,
+            updatedAt: notifications.updatedAt,
+            user: {
+                id: users.id,
+                name: users.name
+            }
+        })
+        .from(notifications)
+        .leftJoin(users, eq(notifications.userId, users.id))
+        .orderBy(desc(notifications.createdAt))
+        .limit(20);
+
+        const mapped = records.map(n => ({
+            ...n,
+            _id: n.id,
+            userId: n.user ? { _id: n.user.id, id: n.user.id, name: n.user.name } : n.userId,
+            content: `${n.user && n.user.name ? n.user.name : n.managerName} ${n.action}: ${n.target}`
+        }));
+
+        return NextResponse.json(mapped);
     } catch (err: any) {
         return NextResponse.json({ error: err.message }, { status: 500 });
     }
@@ -34,9 +52,13 @@ export async function PATCH(req: NextRequest) {
         await connectDB();
 
         if (all) {
-            await Notification.updateMany({ isRead: false }, { isRead: true });
+            await db.update(notifications)
+                .set({ isRead: true, updatedAt: new Date().toISOString() })
+                .where(eq(notifications.isRead, false));
         } else {
-            await Notification.findByIdAndUpdate(id, { isRead: true });
+            await db.update(notifications)
+                .set({ isRead: true, updatedAt: new Date().toISOString() })
+                .where(eq(notifications.id, id));
         }
 
         return NextResponse.json({ message: 'Notifications updated' });

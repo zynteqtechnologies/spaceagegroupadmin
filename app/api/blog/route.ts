@@ -1,39 +1,62 @@
 // app/api/blog/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { connectDB } from '@/lib/mongodb';
-import BlogPost from '@/models/BlogPost';
+import { connectDB, db } from '@/lib/db';
+import { blogPosts } from '@/lib/schema';
+import { eq, and, desc } from 'drizzle-orm';
 import { uploadBuffer } from '@/lib/cloudinary';
 import { getCurrentUser, isManager, isPrivileged } from '@/lib/authUtils';
 import { requireAuth } from '@/lib/apiGuard';
 import { createManagerNotification } from '@/lib/notificationUtils';
+import { redisGet, redisSet, redisDel } from '@/lib/redis';
+import crypto from 'crypto';
 
 export async function GET(req: NextRequest) {
     try {
         const { searchParams } = new URL(req.url);
         const status = searchParams.get('status');
         const category = searchParams.get('category');
-        
+
         await connectDB();
 
         const currentUser = await getCurrentUser(req);
         const isUserPrivileged = currentUser && isPrivileged(currentUser);
 
-        const filter: any = {};
-        if (category) filter.category = category;
+        // Only cache public (non-privileged) requests with no draft access
+        const cacheKey = `cache:blog:${status ?? 'published'}:${category ?? 'all'}`;
+        if (!isUserPrivileged && (!status || status !== 'draft')) {
+            const cached = await redisGet(cacheKey);
+            if (cached) return NextResponse.json(cached, { headers: { 'X-Cache': 'HIT' } });
+        }
+
+        const conditions = [];
+        if (category) {
+            conditions.push(eq(blogPosts.category, category));
+        }
 
         if (status) {
             if (status === 'draft' && !isUserPrivileged) {
                 return NextResponse.json({ error: 'Forbidden: You do not have permission to view drafts' }, { status: 403 });
             }
-            filter.status = status;
+            conditions.push(eq(blogPosts.status, status as 'published' | 'draft'));
         } else {
             if (!isUserPrivileged) {
-                filter.status = 'published';
+                conditions.push(eq(blogPosts.status, 'published'));
             }
         }
 
-        const posts = await BlogPost.find(filter).sort({ createdAt: -1 });
-        return NextResponse.json(posts);
+        const posts = await db.select()
+            .from(blogPosts)
+            .where(conditions.length > 0 ? and(...conditions) : undefined)
+            .orderBy(desc(blogPosts.createdAt));
+
+        const mappedPosts = posts.map(p => ({ ...p, _id: p.id }));
+
+        // Cache only public responses
+        if (!isUserPrivileged && (!status || status !== 'draft')) {
+            await redisSet(cacheKey, mappedPosts, 120);
+        }
+
+        return NextResponse.json(mappedPosts, { headers: { 'X-Cache': 'MISS' } });
     } catch (err: any) {
         return NextResponse.json({ error: err.message }, { status: 500 });
     }
@@ -44,6 +67,7 @@ export async function POST(req: NextRequest) {
         const guard = await requireAuth(req);
         if (guard) return guard;
         const currentUser = await getCurrentUser(req);
+        if (!currentUser) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
         const formData = await req.formData();
         const title = formData.get('title') as string;
@@ -51,7 +75,7 @@ export async function POST(req: NextRequest) {
         const excerpt = formData.get('excerpt') as string || '';
         const category = formData.get('category') as string;
         const tags = JSON.parse(formData.get('tags') as string || '[]');
-        const status = formData.get('status') as string || 'draft';
+        const status = (formData.get('status') as string || 'draft') as 'published' | 'draft';
         const videoUrl = formData.get('videoUrl') as string;
         const author = formData.get('author') as string || 'Space Age Group';
         const authorRole = formData.get('authorRole') as string || 'Media & Communications';
@@ -69,7 +93,7 @@ export async function POST(req: NextRequest) {
 
         // Generate slug
         const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-        const existing = await BlogPost.findOne({ slug });
+        const [existing] = await db.select().from(blogPosts).where(eq(blogPosts.slug, slug)).limit(1);
         if (existing) {
             return NextResponse.json({ error: 'A post with this title already exists.' }, { status: 400 });
         }
@@ -78,7 +102,11 @@ export async function POST(req: NextRequest) {
         const buffer = Buffer.from(await imageFile.arrayBuffer());
         const uploadResult = await uploadBuffer(buffer, imageFile.type, 'blog-posts');
 
-        const post = await BlogPost.create({
+        const id = crypto.randomUUID();
+        const now = new Date().toISOString();
+
+        await db.insert(blogPosts).values({
+            id,
             title,
             slug,
             description,
@@ -95,8 +123,13 @@ export async function POST(req: NextRequest) {
             image: {
                 url: uploadResult.secure_url,
                 cloudinaryId: uploadResult.public_id
-            }
+            },
+            createdAt: now,
+            updatedAt: now
         });
+
+        const [post] = await db.select().from(blogPosts).where(eq(blogPosts.id, id)).limit(1);
+        const responseObj = { ...post, _id: post.id };
 
         // ── Privileged Action Notification ──────────────────────────────
         await createManagerNotification(
@@ -106,7 +139,7 @@ export async function POST(req: NextRequest) {
             title
         );
 
-        return NextResponse.json(post, { status: 201 });
+        return NextResponse.json(responseObj, { status: 201 });
     } catch (err: any) {
         return NextResponse.json({ error: err.message }, { status: 500 });
     }

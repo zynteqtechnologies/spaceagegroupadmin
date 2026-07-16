@@ -1,15 +1,26 @@
 // app/api/timeline/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { connectDB } from '@/lib/mongodb';
-import TimelineEvent from '@/models/TimelineEvent';
+import { connectDB, db } from '@/lib/db';
+import { timelineEvents } from '@/lib/schema';
+import { asc, eq } from 'drizzle-orm';
 import { getCurrentUser, isPrivileged } from '@/lib/authUtils';
 import { createManagerNotification } from '@/lib/notificationUtils';
+import { redisGet, redisSet, redisDel } from '@/lib/redis';
+import crypto from 'crypto';
 
 export async function GET() {
     try {
+        const cacheKey = 'cache:timeline';
+        const cached = await redisGet(cacheKey);
+        if (cached) return NextResponse.json(cached, { headers: { 'X-Cache': 'HIT' } });
+
         await connectDB();
-        const events = await TimelineEvent.find().sort({ order: 1, year: 1 });
-        return NextResponse.json(events);
+        const events = await db.select()
+            .from(timelineEvents)
+            .orderBy(asc(timelineEvents.order), asc(timelineEvents.year));
+
+        await redisSet(cacheKey, events, 300);
+        return NextResponse.json(events, { headers: { 'X-Cache': 'MISS' } });
     } catch (err: any) {
         return NextResponse.json({ error: err.message }, { status: 500 });
     }
@@ -30,12 +41,20 @@ export async function POST(req: NextRequest) {
         }
 
         await connectDB();
-        const event = await TimelineEvent.create({
+        const id = crypto.randomUUID();
+        const now = new Date().toISOString();
+        
+        await db.insert(timelineEvents).values({
+            id,
             year: String(year).trim(),
             title: String(title).trim(),
             description: String(description).trim(),
-            order: parseInt(order as string || '0'),
+            order: parseInt(String(order) || '0'),
+            createdAt: now,
+            updatedAt: now,
         });
+
+        const [event] = await db.select().from(timelineEvents).where(eq(timelineEvents.id, id)).limit(1);
 
         // Notification
         await createManagerNotification(

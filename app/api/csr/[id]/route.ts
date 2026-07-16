@@ -1,6 +1,8 @@
+// app/api/csr/[id]/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { connectDB } from '@/lib/mongodb';
-import CSR from '@/models/CSR';
+import { connectDB, db } from '@/lib/db';
+import { csr } from '@/lib/schema';
+import { eq, or } from 'drizzle-orm';
 import { uploadBuffer } from '@/lib/cloudinary';
 import { getCurrentUser, isPrivileged } from '@/lib/authUtils';
 import { createManagerNotification } from '@/lib/notificationUtils';
@@ -11,9 +13,9 @@ export async function GET(req: NextRequest, { params }: Params) {
     try {
         const { id } = await params;
         await connectDB();
-        const post = await CSR.findById(id);
+        const [post] = await db.select().from(csr).where(or(eq(csr.id, id), eq(csr.slug, id))).limit(1);
         if (!post) return NextResponse.json({ error: 'CSR post not found' }, { status: 404 });
-        return NextResponse.json(post);
+        return NextResponse.json({ ...post, _id: post.id });
     } catch (err: any) {
         return NextResponse.json({ error: err.message }, { status: 500 });
     }
@@ -30,11 +32,16 @@ export async function PATCH(req: NextRequest, { params }: Params) {
         if (contentType.includes('application/json')) {
             const body = await req.json();
             if (body.action === 'like') {
-                const post = await CSR.findById(id);
+                const [post] = await db.select().from(csr).where(eq(csr.id, id)).limit(1);
                 if (!post) return NextResponse.json({ error: 'CSR post not found' }, { status: 404 });
-                post.likes = (post.likes || 0) + 1;
-                await post.save();
-                return NextResponse.json({ success: true, likes: post.likes });
+                
+                const newLikes = (post.likes || 0) + 1;
+                await db.update(csr).set({
+                    likes: newLikes,
+                    updatedAt: new Date().toISOString()
+                }).where(eq(csr.id, id));
+
+                return NextResponse.json({ success: true, likes: newLikes });
             }
         }
 
@@ -44,7 +51,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const post = await CSR.findById(id);
+        const [post] = await db.select().from(csr).where(eq(csr.id, id)).limit(1);
         if (!post) return NextResponse.json({ error: 'CSR post not found' }, { status: 404 });
 
         let title = '';
@@ -76,7 +83,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
 
             const files = formData.getAll('files') as File[];
 
-            // Upload files to Cloudinary under folder: csr/[slug]
+            // Upload files under folder: csr/[slug]
             const folderName = `csr/${slug || 'campaign'}`;
             const fileDetails = newDetails.filter((d: any) => d.provider !== 'youtube');
 
@@ -120,27 +127,31 @@ export async function PATCH(req: NextRequest, { params }: Params) {
             items = Array.isArray(body.items) ? body.items : [];
         }
 
-        if (title) post.title = title.trim();
-        if (slug) post.slug = slug.trim().toLowerCase();
-        if (category) post.category = category.trim();
-        if (date) post.date = date.trim();
-        if (description) post.description = description.trim();
-        if (longDescription) post.longDescription = longDescription.trim();
-        if (impact) post.impact = impact.trim();
-        if (color) post.color = color;
-        if (items) post.items = items;
+        const updates: any = {};
+        if (title) updates.title = title.trim();
+        if (slug) updates.slug = slug.trim().toLowerCase();
+        if (category) updates.category = category.trim();
+        if (date) updates.date = date.trim();
+        if (description) updates.description = description.trim();
+        if (longDescription) updates.longDescription = longDescription.trim();
+        if (impact) updates.impact = impact.trim();
+        if (color) updates.color = color;
+        if (items) updates.items = items;
+        updates.updatedAt = new Date().toISOString();
 
-        await post.save();
+        await db.update(csr).set(updates).where(eq(csr.id, id));
+        const [updatedPost] = await db.select().from(csr).where(eq(csr.id, id)).limit(1);
+        const responseObj = { ...updatedPost, _id: updatedPost.id };
 
         // Notification
         await createManagerNotification(
             currentUser._id.toString(),
             currentUser.name,
             'updated CSR post',
-            post.title
+            updatedPost.title
         );
 
-        return NextResponse.json(post);
+        return NextResponse.json(responseObj);
     } catch (err: any) {
         return NextResponse.json({ error: err.message }, { status: 500 });
     }
@@ -155,11 +166,11 @@ export async function DELETE(req: NextRequest, { params }: Params) {
 
         const { id } = await params;
         await connectDB();
-        const post = await CSR.findById(id);
+        const [post] = await db.select().from(csr).where(eq(csr.id, id)).limit(1);
         if (!post) return NextResponse.json({ error: 'CSR post not found' }, { status: 404 });
 
         const label = post.title;
-        await CSR.findByIdAndDelete(id);
+        await db.delete(csr).where(eq(csr.id, id));
 
         // Notification
         await createManagerNotification(

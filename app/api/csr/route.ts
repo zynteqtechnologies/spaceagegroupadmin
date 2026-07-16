@@ -1,15 +1,26 @@
+// app/api/csr/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { connectDB } from '@/lib/mongodb';
-import CSR from '@/models/CSR';
+import { connectDB, db } from '@/lib/db';
+import { csr } from '@/lib/schema';
+import { eq, desc } from 'drizzle-orm';
 import { uploadBuffer } from '@/lib/cloudinary';
 import { getCurrentUser, isPrivileged } from '@/lib/authUtils';
 import { createManagerNotification } from '@/lib/notificationUtils';
+import { redisGet, redisSet, redisDel } from '@/lib/redis';
+import crypto from 'crypto';
 
 export async function GET() {
     try {
+        const cacheKey = 'cache:csr';
+        const cached = await redisGet(cacheKey);
+        if (cached) return NextResponse.json(cached, { headers: { 'X-Cache': 'HIT' } });
+
         await connectDB();
-        const posts = await CSR.find().sort({ createdAt: -1 });
-        return NextResponse.json(posts);
+        const posts = await db.select().from(csr).orderBy(desc(csr.createdAt));
+        const mappedPosts = posts.map(p => ({ ...p, _id: p.id }));
+
+        await redisSet(cacheKey, mappedPosts, 120);
+        return NextResponse.json(mappedPosts, { headers: { 'X-Cache': 'MISS' } });
     } catch (err: any) {
         return NextResponse.json({ error: err.message }, { status: 500 });
     }
@@ -54,7 +65,7 @@ export async function POST(req: NextRequest) {
 
             const files = formData.getAll('files') as File[];
 
-            // Upload files to Cloudinary under folder: csr/[slug]
+            // Upload files under folder: csr/[slug]
             const folderName = `csr/${slug || 'campaign'}`;
             const fileDetails = newDetails.filter((d: any) => d.provider !== 'youtube');
 
@@ -102,15 +113,21 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
         }
 
+        const cleanSlug = slug.trim().toLowerCase();
+
         // Ensure slug is unique
-        const existing = await CSR.findOne({ slug: slug.trim().toLowerCase() });
+        const [existing] = await db.select().from(csr).where(eq(csr.slug, cleanSlug)).limit(1);
         if (existing) {
             return NextResponse.json({ error: 'Slug must be unique' }, { status: 400 });
         }
 
-        const post = await CSR.create({
+        const id = crypto.randomUUID();
+        const now = new Date().toISOString();
+
+        await db.insert(csr).values({
+            id,
             title: title.trim(),
-            slug: slug.trim().toLowerCase(),
+            slug: cleanSlug,
             category: category.trim(),
             date: date.trim(),
             description: description.trim(),
@@ -119,7 +136,12 @@ export async function POST(req: NextRequest) {
             impact: impact.trim(),
             likes: 0,
             color: color || '#c9a84c',
+            createdAt: now,
+            updatedAt: now
         });
+
+        const [post] = await db.select().from(csr).where(eq(csr.id, id)).limit(1);
+        const responseObj = { ...post, _id: post.id };
 
         // Notification
         await createManagerNotification(
@@ -129,7 +151,7 @@ export async function POST(req: NextRequest) {
             title
         );
 
-        return NextResponse.json(post);
+        return NextResponse.json(responseObj);
     } catch (err: any) {
         return NextResponse.json({ error: err.message }, { status: 500 });
     }

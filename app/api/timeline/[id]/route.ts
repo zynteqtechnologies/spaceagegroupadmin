@@ -1,7 +1,8 @@
 // app/api/timeline/[id]/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { connectDB } from '@/lib/mongodb';
-import TimelineEvent from '@/models/TimelineEvent';
+import { connectDB, db } from '@/lib/db';
+import { timelineEvents } from '@/lib/schema';
+import { eq } from 'drizzle-orm';
 import { getCurrentUser, isPrivileged } from '@/lib/authUtils';
 import { createManagerNotification } from '@/lib/notificationUtils';
 
@@ -11,7 +12,7 @@ export async function GET(req: NextRequest, { params }: Params) {
     try {
         const { id } = await params;
         await connectDB();
-        const event = await TimelineEvent.findById(id);
+        const [event] = await db.select().from(timelineEvents).where(eq(timelineEvents.id, id)).limit(1);
         if (!event) return NextResponse.json({ error: 'Milestone not found' }, { status: 404 });
         return NextResponse.json(event);
     } catch (err: any) {
@@ -31,25 +32,28 @@ export async function PATCH(req: NextRequest, { params }: Params) {
         const { year, title, description, order } = body;
 
         await connectDB();
-        const event = await TimelineEvent.findById(id);
+        const [event] = await db.select().from(timelineEvents).where(eq(timelineEvents.id, id)).limit(1);
         if (!event) return NextResponse.json({ error: 'Milestone not found' }, { status: 404 });
 
-        if (year !== undefined) event.year = String(year).trim();
-        if (title !== undefined) event.title = String(title).trim();
-        if (description !== undefined) event.description = String(description).trim();
-        if (order !== undefined) event.order = parseInt(order as string || '0');
+        const updates: any = {};
+        if (year !== undefined) updates.year = String(year).trim();
+        if (title !== undefined) updates.title = String(title).trim();
+        if (description !== undefined) updates.description = String(description).trim();
+        if (order !== undefined) updates.order = parseInt(String(order) || '0');
+        updates.updatedAt = new Date().toISOString();
 
-        await event.save();
+        await db.update(timelineEvents).set(updates).where(eq(timelineEvents.id, id));
+        const [updatedEvent] = await db.select().from(timelineEvents).where(eq(timelineEvents.id, id)).limit(1);
 
         // Notification
         await createManagerNotification(
             currentUser._id.toString(),
             currentUser.name,
             'updated journey milestone',
-            `${event.year} - ${event.title}`
+            `${updatedEvent.year} - ${updatedEvent.title}`
         );
 
-        return NextResponse.json(event);
+        return NextResponse.json(updatedEvent);
     } catch (err: any) {
         return NextResponse.json({ error: err.message }, { status: 500 });
     }
@@ -64,11 +68,11 @@ export async function DELETE(req: NextRequest, { params }: Params) {
 
         const { id } = await params;
         await connectDB();
-        const event = await TimelineEvent.findById(id);
+        const [event] = await db.select().from(timelineEvents).where(eq(timelineEvents.id, id)).limit(1);
         if (!event) return NextResponse.json({ error: 'Milestone not found' }, { status: 404 });
 
         const label = `${event.year} - ${event.title}`;
-        await TimelineEvent.findByIdAndDelete(id);
+        await db.delete(timelineEvents).where(eq(timelineEvents.id, id));
 
         // Notification
         await createManagerNotification(

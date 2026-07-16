@@ -1,6 +1,8 @@
+// app/api/services/[id]/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { connectDB } from '@/lib/mongodb';
-import Service from '@/models/Service';
+import { connectDB, db } from '@/lib/db';
+import { services } from '@/lib/schema';
+import { eq, or } from 'drizzle-orm';
 import { getCurrentUser, isPrivileged } from '@/lib/authUtils';
 import { requireAuth } from '@/lib/apiGuard';
 import { createManagerNotification } from '@/lib/notificationUtils';
@@ -12,9 +14,10 @@ export async function GET(req: NextRequest, { params }: Params) {
         const { id } = await params;
         await connectDB();
         
-        const service = id.match(/^[0-9a-fA-F]{24}$/)
-            ? await Service.findById(id)
-            : await Service.findOne({ slug: id });
+        const [service] = await db.select()
+            .from(services)
+            .where(or(eq(services.id, id), eq(services.slug, id)))
+            .limit(1);
 
         if (!service) return NextResponse.json({ error: 'Service not found' }, { status: 404 });
 
@@ -26,7 +29,7 @@ export async function GET(req: NextRequest, { params }: Params) {
             }
         }
 
-        return NextResponse.json(service);
+        return NextResponse.json({ ...service, _id: service.id });
     } catch (err: any) {
         return NextResponse.json({ error: err.message }, { status: 500 });
     }
@@ -37,37 +40,43 @@ export async function PATCH(req: NextRequest, { params }: Params) {
         const guard = await requireAuth(req);
         if (guard) return guard;
         const currentUser = await getCurrentUser(req);
+        if (!currentUser) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
         const { id } = await params;
         const body = await req.json();
         
         await connectDB();
-        const service = await Service.findById(id);
+        const [service] = await db.select().from(services).where(eq(services.id, id)).limit(1);
         if (!service) return NextResponse.json({ error: 'Service not found' }, { status: 404 });
 
+        const updates: any = {};
         const fields = ['title', 'number', 'category', 'tagline', 'description', 'accent', 'icon', 'status', 'stats', 'features'];
         fields.forEach(field => {
             if (body[field] !== undefined) {
-                (service as any)[field] = body[field];
+                updates[field] = field === 'number' ? String(body[field]) : body[field];
             }
         });
 
         // Update slug if title changes
         if (body.title) {
-            service.slug = body.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+            updates.slug = body.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
         }
 
-        await service.save();
+        updates.updatedAt = new Date().toISOString();
+
+        await db.update(services).set(updates).where(eq(services.id, id));
+        const [updatedService] = await db.select().from(services).where(eq(services.id, id)).limit(1);
+        const responseObj = { ...updatedService, _id: updatedService.id };
 
         // ── Privileged Action Notification ──────────────────────────────
         await createManagerNotification(
             currentUser._id.toString(),
             currentUser.name,
             'updated service',
-            service.title
+            updatedService.title
         );
 
-        return NextResponse.json(service);
+        return NextResponse.json(responseObj);
     } catch (err: any) {
         return NextResponse.json({ error: err.message }, { status: 500 });
     }
@@ -78,14 +87,15 @@ export async function DELETE(req: NextRequest, { params }: Params) {
         const guard = await requireAuth(req);
         if (guard) return guard;
         const currentUser = await getCurrentUser(req);
+        if (!currentUser) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
         const { id } = await params;
         await connectDB();
-        const service = await Service.findById(id);
+        const [service] = await db.select().from(services).where(eq(services.id, id)).limit(1);
         if (!service) return NextResponse.json({ error: 'Service not found' }, { status: 404 });
 
         const serviceTitle = service.title;
-        await Service.findByIdAndDelete(id);
+        await db.delete(services).where(eq(services.id, id));
 
         // ── Privileged Action Notification ──────────────────────────────
         await createManagerNotification(

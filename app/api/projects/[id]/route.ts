@@ -1,29 +1,20 @@
 // app/api/projects/[id]/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import mongoose from 'mongoose';
-import { connectDB } from '@/lib/mongodb';
+import { connectDB, db } from '@/lib/db';
+import { projects } from '@/lib/schema';
+import { eq, and, or, ne } from 'drizzle-orm';
 import { deleteFromCloudinary } from '@/lib/cloudinary';
-import Project from '@/models/Project';
-import { IMediaItem } from '@/models/Project';
 import { getCurrentUser, isManager, isPrivileged } from '@/lib/authUtils';
 import { requireAuth } from '@/lib/apiGuard';
 import { createManagerNotification } from '@/lib/notificationUtils';
+import { redisDel } from '@/lib/redis';
 
 type Params = { params: Promise<{ id: string }> };
 
-// ── helper: find by ObjectId OR slug ─────────────────────────────────────────
+// ── helper: find by ID OR slug ─────────────────────────────────────────
 async function findProject(id: string) {
-    const isObjectId = mongoose.Types.ObjectId.isValid(id) && id.length === 24;
-    return isObjectId
-        ? Project.findById(id)
-        : Project.findOne({ slug: id });
-}
-
-async function findProjectLean(id: string) {
-    const isObjectId = mongoose.Types.ObjectId.isValid(id) && id.length === 24;
-    return isObjectId
-        ? Project.findById(id).lean()
-        : Project.findOne({ slug: id }).lean();
+    const [project] = await db.select().from(projects).where(or(eq(projects.id, id), eq(projects.slug, id))).limit(1);
+    return project;
 }
 
 // ── GET /api/projects/:id ─────────────────────────────────────────────────────
@@ -32,12 +23,12 @@ export async function GET(_req: NextRequest, { params }: Params) {
         const { id } = await params;
         await connectDB();
 
-        const project = await findProjectLean(id);
+        const project = await findProject(id);
         if (!project) {
             return NextResponse.json({ error: 'Project not found' }, { status: 404 });
         }
 
-        return NextResponse.json(project);
+        return NextResponse.json({ ...project, _id: project.id });
     } catch (err: unknown) {
         const message = err instanceof Error ? err.message : 'Server error';
         console.error('[GET /api/projects/[id]]', err);
@@ -51,6 +42,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
         const guard = await requireAuth(req);
         if (guard) return guard;
         const currentUser = await getCurrentUser(req);
+        if (!currentUser) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
         const { id } = await params;
         await connectDB();
@@ -63,37 +55,50 @@ export async function PATCH(req: NextRequest, { params }: Params) {
             return NextResponse.json({ error: 'Project not found' }, { status: 404 });
         }
 
-        if (title !== undefined) project.title = title.trim();
-        if (headline !== undefined) project.headline = headline.trim();
-        if (shortIntro !== undefined) project.shortIntro = shortIntro.trim();
-        if (status !== undefined) project.status = status;
-        if (address !== undefined) project.address = address.trim();
-        if (estYear !== undefined) project.estYear = estYear.trim();
-        if (featured !== undefined) project.featured = !!featured;
-        if (category !== undefined) project.category = category.trim();
-        if (area !== undefined) project.area = area.trim();
-        if (units !== undefined) project.units = units ? Number(units) : 0;
+        const updates: any = {};
+        if (title !== undefined) updates.title = title.trim();
+        if (headline !== undefined) updates.headline = headline.trim();
+        if (shortIntro !== undefined) updates.shortIntro = shortIntro.trim();
+        if (status !== undefined) updates.status = status;
+        if (address !== undefined) updates.address = address.trim();
+        if (estYear !== undefined) updates.estYear = estYear.trim();
+        if (featured !== undefined) updates.featured = !!featured;
+        if (category !== undefined) updates.category = category.trim();
+        if (area !== undefined) updates.area = area.trim();
+        if (units !== undefined) updates.units = units ? Number(units) : 0;
 
         if (slug !== undefined) {
             const newSlug = slug.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-            const conflict = await Project.findOne({ slug: newSlug, _id: { $ne: project._id } });
+            const [conflict] = await db.select().from(projects).where(
+                and(
+                    eq(projects.slug, newSlug),
+                    ne(projects.id, project.id)
+                )
+            ).limit(1);
             if (conflict) {
                 return NextResponse.json({ error: `Slug "${newSlug}" already taken` }, { status: 409 });
             }
-            project.slug = newSlug;
+            updates.slug = newSlug;
         }
 
-        await project.save();
+        updates.updatedAt = new Date().toISOString();
+
+        await db.update(projects).set(updates).where(eq(projects.id, project.id));
+        const [updatedProject] = await db.select().from(projects).where(eq(projects.id, project.id)).limit(1);
+        const responseObj = { ...updatedProject, _id: updatedProject.id };
  
         // ── Privileged Action Notification ──────────────────────────────
         await createManagerNotification(
             currentUser._id.toString(),
             currentUser.name,
             'updated project',
-            project.title
+            updatedProject.title
         );
 
-        return NextResponse.json({ message: 'Updated successfully', project });
+        // Invalidate projects list cache
+        await redisDel('cache:projects:all', 'cache:projects:upcoming', 'cache:projects:ongoing', 'cache:projects:completed');
+
+        return NextResponse.json({ message: 'Updated successfully', project: responseObj });
     } catch (err: unknown) {
         const message = err instanceof Error ? err.message : 'Server error';
         console.error('[PATCH /api/projects/[id]]', err);
@@ -107,6 +112,7 @@ export async function DELETE(req: NextRequest, { params }: Params) {
         const guard = await requireAuth(req);
         if (guard) return guard;
         const currentUser = await getCurrentUser(req);
+        if (!currentUser) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
         const { id } = await params;
         await connectDB();
@@ -118,8 +124,8 @@ export async function DELETE(req: NextRequest, { params }: Params) {
 
         const cleanupTasks: Promise<void>[] = [];
 
-        const deleteMedia = (items: IMediaItem[], type: 'image' | 'video' = 'image') => {
-            items.forEach((item) => {
+        const deleteMedia = (items: any[], type: 'image' | 'video' = 'image') => {
+            (items || []).forEach((item) => {
                 if (item.cloudinaryId) {
                     cleanupTasks.push(
                         deleteFromCloudinary(item.cloudinaryId, item.mediaType === 'video' ? 'video' : type)
@@ -129,26 +135,26 @@ export async function DELETE(req: NextRequest, { params }: Params) {
             });
         };
 
-        deleteMedia(project.heroImages as unknown as IMediaItem[]);
-        deleteMedia(project.floorPlans as unknown as IMediaItem[]);
-        deleteMedia(project.sampleHousePhotos as unknown as IMediaItem[]);
+        deleteMedia(project.heroImages as any[]);
+        deleteMedia(project.floorPlans as any[]);
+        deleteMedia(project.sampleHousePhotos as any[]);
 
-        if (project.layoutPlan?.cloudinaryId) {
+        if ((project.layoutPlan as any)?.cloudinaryId) {
             cleanupTasks.push(
-                deleteFromCloudinary(project.layoutPlan.cloudinaryId, 'image')
+                deleteFromCloudinary((project.layoutPlan as any).cloudinaryId, 'image')
                     .catch((e) => console.error('Cloudinary delete failed:', e))
             );
         }
-        if (project.brochure?.cloudinaryId) {
+        if ((project.brochure as any)?.cloudinaryId) {
             cleanupTasks.push(
-                deleteFromCloudinary(project.brochure.cloudinaryId, 'image')
+                deleteFromCloudinary((project.brochure as any).cloudinaryId, 'image')
                     .catch((e) => console.error('Cloudinary delete failed:', e))
             );
         }
 
         await Promise.allSettled(cleanupTasks);
         const projectTitle = project.title;
-        await Project.findByIdAndDelete(project._id);
+        await db.delete(projects).where(eq(projects.id, project.id));
  
         // ── Privileged Action Notification ──────────────────────────────
         await createManagerNotification(
@@ -157,6 +163,9 @@ export async function DELETE(req: NextRequest, { params }: Params) {
             'deleted project',
             projectTitle
         );
+
+        // Invalidate projects list cache
+        await redisDel('cache:projects:all', 'cache:projects:upcoming', 'cache:projects:ongoing', 'cache:projects:completed');
 
         return NextResponse.json({ message: 'Project deleted successfully' });
     } catch (err: unknown) {

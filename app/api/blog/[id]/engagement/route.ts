@@ -1,9 +1,9 @@
 // app/api/blog/[id]/engagement/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { connectDB } from '@/lib/mongodb';
-import BlogPost from '@/models/BlogPost';
-import Comment from '@/models/Comment';
-import Notification from '@/models/Notification';
+import { connectDB, db } from '@/lib/db';
+import { blogPosts, comments, notifications } from '@/lib/schema';
+import { eq, or, desc } from 'drizzle-orm';
+import crypto from 'crypto';
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -11,14 +11,21 @@ export async function GET(req: NextRequest, { params }: Params) {
     try {
         const { id } = await params;
         await connectDB();
-        const post = id.match(/^[0-9a-fA-F]{24}$/)
-            ? await BlogPost.findById(id)
-            : await BlogPost.findOne({ slug: id });
+        
+        const [post] = await db.select()
+            .from(blogPosts)
+            .where(or(eq(blogPosts.id, id), eq(blogPosts.slug, id)))
+            .limit(1);
         
         if (!post) return NextResponse.json({ error: 'Post not found' }, { status: 404 });
 
-        const comments = await Comment.find({ postId: post._id.toString() }).sort({ createdAt: -1 });
-        return NextResponse.json(comments);
+        const records = await db.select()
+            .from(comments)
+            .where(eq(comments.postId, post.id))
+            .orderBy(desc(comments.createdAt));
+
+        const mapped = records.map(c => ({ ...c, _id: c.id }));
+        return NextResponse.json(mapped);
     } catch (err: any) {
         return NextResponse.json({ error: err.message }, { status: 500 });
     }
@@ -31,49 +38,77 @@ export async function POST(req: NextRequest, { params }: Params) {
         const { action, authorName, authorEmail, content, parentId } = body;
 
         await connectDB();
-        const post = id.match(/^[0-9a-fA-F]{24}$/)
-            ? await BlogPost.findById(id)
-            : await BlogPost.findOne({ slug: id });
+        
+        const [post] = await db.select()
+            .from(blogPosts)
+            .where(or(eq(blogPosts.id, id), eq(blogPosts.slug, id)))
+            .limit(1);
+
         if (!post) return NextResponse.json({ error: 'Post not found' }, { status: 404 });
         
-        // Ensure we use the actual _id string from now on
-        const postIdStr = post._id.toString();
+        const postIdStr = post.id;
+        const now = new Date().toISOString();
 
         if (action === 'like') {
-            if (!post.settings.allowLikes) return NextResponse.json({ error: 'Likes disabled' }, { status: 403 });
-            post.likesCount += 1;
-            await post.save();
+            const settings = post.settings as any;
+            if (settings && settings.allowLikes === false) {
+                return NextResponse.json({ error: 'Likes disabled' }, { status: 403 });
+            }
+
+            const newLikesCount = (post.likesCount || 0) + 1;
+            await db.update(blogPosts)
+                .set({ likesCount: newLikesCount, updatedAt: now })
+                .where(eq(blogPosts.id, postIdStr));
 
             // Create notification
-            await Notification.create({
-                type: 'like',
-                content: `Someone liked your post: ${post.title}`,
-                postId: postIdStr
+            await db.insert(notifications).values({
+                id: crypto.randomUUID(),
+                userId: 'system',
+                managerName: 'Visitor',
+                action: 'liked post',
+                target: post.title,
+                isRead: false,
+                createdAt: now,
+                updatedAt: now
             });
 
-            return NextResponse.json({ likesCount: post.likesCount });
+            return NextResponse.json({ likesCount: newLikesCount });
         }
 
         if (action === 'comment' || action === 'reply') {
-            if (!post.settings.allowComments) return NextResponse.json({ error: 'Comments disabled' }, { status: 403 });
+            const settings = post.settings as any;
+            if (settings && settings.allowComments === false) {
+                return NextResponse.json({ error: 'Comments disabled' }, { status: 403 });
+            }
             
-            const comment = await Comment.create({
+            const commentId = crypto.randomUUID();
+            await db.insert(comments).values({
+                id: commentId,
                 postId: postIdStr,
                 parentId: parentId || null,
                 authorName,
                 authorEmail,
-                content
+                content,
+                createdAt: now,
+                updatedAt: now
             });
+
+            const [comment] = await db.select().from(comments).where(eq(comments.id, commentId)).limit(1);
+            const responseObj = { ...comment, _id: comment.id };
 
             // Create notification
-            await Notification.create({
-                type: action === 'reply' ? 'reply' : 'comment',
-                content: `${authorName} ${action === 'reply' ? 'replied to a comment' : 'commented'} on: ${post.title}`,
-                postId: postIdStr,
-                commentId: comment._id
+            await db.insert(notifications).values({
+                id: crypto.randomUUID(),
+                userId: 'system',
+                managerName: authorName,
+                action: action === 'reply' ? 'replied to comment' : 'commented on post',
+                target: post.title,
+                isRead: false,
+                createdAt: now,
+                updatedAt: now
             });
 
-            return NextResponse.json(comment);
+            return NextResponse.json(responseObj);
         }
 
         return NextResponse.json({ error: 'Invalid action' }, { status: 400 });

@@ -1,8 +1,8 @@
 // app/api/media/[id]/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { connectDB } from '@/lib/mongodb';
-import Media from '@/models/Media';
-import Project from '@/models/Project';
+import { connectDB, db } from '@/lib/db';
+import { media, projects } from '@/lib/schema';
+import { eq } from 'drizzle-orm';
 import { uploadBuffer } from '@/lib/cloudinary';
 import { getCurrentUser, isManager, isPrivileged } from '@/lib/authUtils';
 import { requireAuth } from '@/lib/apiGuard';
@@ -15,9 +15,35 @@ export async function GET(req: NextRequest, { params }: Params) {
     try {
         const { id } = await params;
         await connectDB();
-        const media = await Media.findById(id).populate('project', 'title slug');
-        if (!media) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-        return NextResponse.json(media);
+
+        const rows = await db.select({
+            mediaRecord: media,
+            projectRecord: {
+                id: projects.id,
+                title: projects.title,
+                slug: projects.slug
+            }
+        })
+        .from(media)
+        .leftJoin(projects, eq(media.project, projects.id))
+        .where(eq(media.id, id))
+        .limit(1);
+
+        if (rows.length === 0) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+        
+        const row = rows[0];
+        const responseObj = {
+            ...row.mediaRecord,
+            _id: row.mediaRecord.id,
+            project: row.projectRecord ? {
+                _id: row.projectRecord.id,
+                id: row.projectRecord.id,
+                title: row.projectRecord.title,
+                slug: row.projectRecord.slug
+            } : null
+        };
+
+        return NextResponse.json(responseObj);
     } catch (err: unknown) {
         const message = err instanceof Error ? err.message : 'Server error';
         return NextResponse.json({ error: message }, { status: 500 });
@@ -30,13 +56,14 @@ export async function PATCH(req: NextRequest, { params }: Params) {
         const guard = await requireAuth(req);
         if (guard) return guard;
         const currentUser = await getCurrentUser(req);
+        if (!currentUser) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
         const { id } = await params;
         const contentType = req.headers.get('content-type') || '';
         
         await connectDB();
-        const media = await Media.findById(id);
-        if (!media) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+        const [mediaRecord] = await db.select().from(media).where(eq(media.id, id)).limit(1);
+        if (!mediaRecord) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
         let title = '';
         let items: any[] = [];
@@ -52,8 +79,8 @@ export async function PATCH(req: NextRequest, { params }: Params) {
 
             const files = formData.getAll('files') as File[];
 
-            // Find project to get title for Cloudinary folder name
-            const project = await Project.findById(media.project);
+            // Find project to get title for folder name
+            const [project] = await db.select().from(projects).where(eq(projects.id, mediaRecord.project)).limit(1);
             const folderName = `media/${project ? project.title : 'uploads'}/uploads`;
 
             const fileDetails = newDetails.filter((d: any) => d.provider !== 'youtube');
@@ -109,19 +136,23 @@ export async function PATCH(req: NextRequest, { params }: Params) {
             items = body.items;
         }
 
-        if (title) media.title = title;
-        if (items) media.items = items;
+        const updates: any = {};
+        if (title) updates.title = title;
+        if (items) updates.items = items;
+        updates.updatedAt = new Date().toISOString();
 
-        await media.save();
- 
+        await db.update(media).set(updates).where(eq(media.id, id));
+        const [updatedRecord] = await db.select().from(media).where(eq(media.id, id)).limit(1);
+        const responseObj = { ...updatedRecord, _id: updatedRecord.id };
+
         // ── Privileged Action Notification ──────────────────────────────
         await createManagerNotification(
             currentUser._id.toString(),
             currentUser.name,
             'updated media collection',
-            media.title
+            updatedRecord.title
         );
-        return NextResponse.json(media);
+        return NextResponse.json(responseObj);
     } catch (err: unknown) {
         const message = err instanceof Error ? err.message : 'Server error';
         return NextResponse.json({ error: message }, { status: 500 });
@@ -134,13 +165,15 @@ export async function DELETE(req: NextRequest, { params }: Params) {
         const guard = await requireAuth(req);
         if (guard) return guard;
         const currentUser = await getCurrentUser(req);
+        if (!currentUser) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
         const { id } = await params;
         await connectDB();
-        const media = await Media.findById(id);
-        if (!media) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-        const mediaTitle = media.title;
-        await Media.findByIdAndDelete(id);
+        const [mediaRecord] = await db.select().from(media).where(eq(media.id, id)).limit(1);
+        if (!mediaRecord) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+        const mediaTitle = mediaRecord.title;
+        
+        await db.delete(media).where(eq(media.id, id));
  
         // ── Privileged Action Notification ──────────────────────────────
         await createManagerNotification(

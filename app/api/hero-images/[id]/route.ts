@@ -1,14 +1,17 @@
 // app/api/hero-images/[id]/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { connectDB } from '@/lib/mongodb';
+import { connectDB, db } from '@/lib/db';
+import { heroImages } from '@/lib/schema';
+import { eq } from 'drizzle-orm';
 import { uploadBuffer, deleteFromCloudinary, CloudinaryResult } from '@/lib/cloudinary';
-import HeroImage, { IMediaItem } from '@/models/HeroImage';
 import { type NewMediaDetail } from '@/types/media';
 import { requireAuth } from '@/lib/apiGuard';
+import crypto from 'crypto';
 
 type Params = { params: Promise<{ id: string }> };
 
 interface MediaObject {
+  _id:          string;
   url:          string;
   cloudinaryId: string;
   alt:          string;
@@ -30,6 +33,7 @@ function buildMediaObject(
 ): MediaObject {
   const isVideo = file.type.startsWith('video/');
   return {
+    _id:          (detail as any)._id || crypto.randomUUID(),
     url:          result.secure_url,
     cloudinaryId: result.public_id,
     alt:          detail.alt         ?? '',
@@ -50,29 +54,32 @@ export async function PUT(req: NextRequest, { params }: Params) {
     const guard = await requireAuth(req);
     if (guard) return guard;
 
-    const { id } = await params; // ✅ await params
+    const { id } = await params;
 
     await connectDB();
 
-    const heroImage = await HeroImage.findById(id);
+    const [heroImage] = await db.select().from(heroImages).where(eq(heroImages.id, id)).limit(1);
     if (!heroImage) {
       return NextResponse.json({ error: 'Not found' }, { status: 404 });
     }
 
     const formData  = await req.formData();
     const rawDetail = formData.get('imageDetails') as string | null;
-    const details   = JSON.parse(rawDetail ?? '[]') as (IMediaItem & { markedForDeletion?: boolean })[];
+    const details   = JSON.parse(rawDetail ?? '[]') as (any & { markedForDeletion?: boolean })[];
     const files     = formData.getAll('images') as File[];
 
+    const currentImages = (heroImage.images || []) as any[];
+
     const toKeep:  MediaObject[]             = [];
-    const toDelete: IMediaItem[]             = [];
+    const toDelete: any[]                    = [];
     const newMeta:  Partial<NewMediaDetail>[] = [];
 
     details.forEach((d) => {
       if (d._id && !d.markedForDeletion) {
-        const orig = heroImage.images.id(d._id);
+        const orig = currentImages.find(img => String(img._id) === String(d._id));
         if (orig) {
           toKeep.push({
+            _id:          orig._id,
             url:          orig.url,
             cloudinaryId: orig.cloudinaryId ?? '',
             alt:          d.alt          ?? orig.alt          ?? '',
@@ -87,7 +94,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
           });
         }
       } else if (d._id && d.markedForDeletion) {
-        const orig = heroImage.images.id(d._id);
+        const orig = currentImages.find(img => String(img._id) === String(d._id));
         if (orig) toDelete.push(orig);
       } else {
         newMeta.push(d);
@@ -102,7 +109,6 @@ export async function PUT(req: NextRequest, { params }: Params) {
             media.mediaType === 'video' ? 'video' : 'image'
           );
         }
-        heroImage.images.pull({ _id: media._id });
       })
     );
 
@@ -114,10 +120,21 @@ export async function PUT(req: NextRequest, { params }: Params) {
       })
     );
 
-    heroImage.set('images', [...toKeep, ...newObjects]);
-    await heroImage.save();
+    const now = new Date().toISOString();
+    const finalImages = [...toKeep, ...newObjects];
+    
+    await db.update(heroImages).set({
+      images: finalImages,
+      updatedAt: now
+    }).where(eq(heroImages.id, id));
 
-    return NextResponse.json({ message: 'Updated successfully', heroImage });
+    const [updatedHeroImage] = await db.select().from(heroImages).where(eq(heroImages.id, id)).limit(1);
+    const responseObj = {
+      ...updatedHeroImage,
+      _id: updatedHeroImage.id
+    };
+
+    return NextResponse.json({ message: 'Updated successfully', heroImage: responseObj });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Server error';
     console.error('[PUT /api/hero-images/[id]]', err);
@@ -131,17 +148,19 @@ export async function DELETE(req: NextRequest, { params }: Params) {
     const guard = await requireAuth(req);
     if (guard) return guard;
 
-    const { id } = await params; // ✅ await params
+    const { id } = await params;
 
     await connectDB();
 
-    const heroImage = await HeroImage.findById(id);
+    const [heroImage] = await db.select().from(heroImages).where(eq(heroImages.id, id)).limit(1);
     if (!heroImage) {
       return NextResponse.json({ error: 'Not found' }, { status: 404 });
     }
 
+    const currentImages = (heroImage.images || []) as any[];
+
     await Promise.allSettled(
-      heroImage.images.map((media: IMediaItem) =>
+      currentImages.map((media: any) =>
         media.cloudinaryId
           ? deleteFromCloudinary(
               media.cloudinaryId,
@@ -151,7 +170,7 @@ export async function DELETE(req: NextRequest, { params }: Params) {
       )
     );
 
-    await HeroImage.findByIdAndDelete(id);
+    await db.delete(heroImages).where(eq(heroImages.id, id));
 
     return NextResponse.json({ message: 'Deleted successfully' });
   } catch (err: unknown) {

@@ -1,21 +1,29 @@
 // app/api/settings/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { connectDB } from '@/lib/mongodb';
-import SiteSettings from '@/models/SiteSettings';
+import { connectDB, db } from '@/lib/db';
+import { siteSettings } from '@/lib/schema';
+import { eq } from 'drizzle-orm';
 import { getCurrentUser, isPrivileged } from '@/lib/authUtils';
 import { createManagerNotification } from '@/lib/notificationUtils';
+import crypto from 'crypto';
 
 export async function GET() {
     try {
         await connectDB();
-        let settings = await SiteSettings.findOne();
+        let [settings] = await db.select().from(siteSettings).limit(1);
         if (!settings) {
-            settings = await SiteSettings.create({
+            const id = crypto.randomUUID();
+            const now = new Date().toISOString();
+            await db.insert(siteSettings).values({
+                id,
                 yearsOfExcellence: '35+',
                 projectsCompleted: '120+',
                 happyFamilies: '5000+',
                 clientSatisfaction: '98%',
+                createdAt: now,
+                updatedAt: now,
             });
+            [settings] = await db.select().from(siteSettings).limit(1);
         }
         return NextResponse.json(settings);
     } catch (err: any) {
@@ -34,17 +42,32 @@ export async function PUT(req: NextRequest) {
         const { yearsOfExcellence, projectsCompleted, happyFamilies, clientSatisfaction } = body;
 
         await connectDB();
-        let settings = await SiteSettings.findOne();
+        let [settings] = await db.select().from(siteSettings).limit(1);
+        const now = new Date().toISOString();
+
         if (!settings) {
-            settings = new SiteSettings();
+            const id = crypto.randomUUID();
+            await db.insert(siteSettings).values({
+                id,
+                yearsOfExcellence: String(yearsOfExcellence !== undefined ? yearsOfExcellence : '35+').trim(),
+                projectsCompleted: String(projectsCompleted !== undefined ? projectsCompleted : '120+').trim(),
+                happyFamilies: String(happyFamilies !== undefined ? happyFamilies : '5000+').trim(),
+                clientSatisfaction: String(clientSatisfaction !== undefined ? clientSatisfaction : '98%').trim(),
+                createdAt: now,
+                updatedAt: now,
+            });
+            [settings] = await db.select().from(siteSettings).limit(1);
+        } else {
+            const updates: any = {};
+            if (yearsOfExcellence !== undefined) updates.yearsOfExcellence = String(yearsOfExcellence).trim();
+            if (projectsCompleted !== undefined) updates.projectsCompleted = String(projectsCompleted).trim();
+            if (happyFamilies !== undefined) updates.happyFamilies = String(happyFamilies).trim();
+            if (clientSatisfaction !== undefined) updates.clientSatisfaction = String(clientSatisfaction).trim();
+            updates.updatedAt = now;
+
+            await db.update(siteSettings).set(updates).where(eq(siteSettings.id, settings.id));
+            [settings] = await db.select().from(siteSettings).limit(1);
         }
-
-        if (yearsOfExcellence !== undefined) settings.yearsOfExcellence = String(yearsOfExcellence).trim();
-        if (projectsCompleted !== undefined) settings.projectsCompleted = String(projectsCompleted).trim();
-        if (happyFamilies !== undefined) settings.happyFamilies = String(happyFamilies).trim();
-        if (clientSatisfaction !== undefined) settings.clientSatisfaction = String(clientSatisfaction).trim();
-
-        await settings.save();
 
         // Send a notification log
         await createManagerNotification(

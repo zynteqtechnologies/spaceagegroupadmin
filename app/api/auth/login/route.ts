@@ -1,10 +1,12 @@
 // app/api/auth/login/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import connectDB from '@/lib/db';
-import User from '@/models/User';
+import connectDB, { db } from '@/lib/db';
+import { users } from '@/lib/schema';
+import { eq } from 'drizzle-orm';
 import jwt from 'jsonwebtoken';
 import { serialize } from 'cookie';
 import { checkRateLimit } from '@/lib/rateLimit';
+import bcrypt from 'bcryptjs';
 
 export async function POST(req: NextRequest) {
   try {
@@ -14,17 +16,17 @@ export async function POST(req: NextRequest) {
     await connectDB();
     const { email, password } = await req.json();
 
-    const user = await User.findOne({ email });
+    const [user] = await db.select().from(users).where(eq(users.email, email)).limit(1);
     if (!user) {
       return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
     }
 
-    const isMatch = await user.comparePassword(password);
+    const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
     }
 
-    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET!, { expiresIn: '7d' });
+    const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET!, { expiresIn: '7d' });
 
     const cookie = serialize('token', token, {
       httpOnly: true,
@@ -35,7 +37,7 @@ export async function POST(req: NextRequest) {
     });
 
     const response = NextResponse.json(
-      { user: { id: user._id, name: user.name, email, role: user.role } },
+      { user: { id: user.id, name: user.name, email, role: user.role } },
       { status: 200 }
     );
     response.headers.set('Set-Cookie', cookie);

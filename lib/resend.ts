@@ -1,8 +1,8 @@
 // lib/resend.ts
 
 export async function sendResendEmail({ to, subject, html }: { to: string; subject: string; html: string }) {
-    const apiKey = process.env.RESEND_API_KEY || 're_dwKV5VyZ_EnT55NKj3WT54i4jBM4HEfYG';
-    
+    const apiKey = process.env.RESEND_API_KEY || '';
+
     try {
         console.log(`Sending email to ${to} via Resend...`);
         const res = await fetch('https://api.resend.com/emails', {

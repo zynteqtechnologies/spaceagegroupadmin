@@ -2,8 +2,9 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import jwt from 'jsonwebtoken';
-import connectDB from '@/lib/db';
-import User from '@/models/User';
+import connectDB, { db } from '@/lib/db';
+import { users } from '@/lib/schema';
+import { eq } from 'drizzle-orm';
 
 export async function GET() {
   try {
@@ -16,14 +17,14 @@ export async function GET() {
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { userId: string };
     await connectDB();
-    const user = await User.findById(decoded.userId).select('-password');
+    const [user] = await db.select().from(users).where(eq(users.id, decoded.userId)).limit(1);
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
     return NextResponse.json({ 
       user: { 
-        id: user._id, 
+        id: user.id, 
         name: user.name, 
         email: user.email,
         role: user.role 

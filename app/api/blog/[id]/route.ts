@@ -1,7 +1,8 @@
 // app/api/blog/[id]/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { connectDB } from '@/lib/mongodb';
-import BlogPost from '@/models/BlogPost';
+import { connectDB, db } from '@/lib/db';
+import { blogPosts } from '@/lib/schema';
+import { eq, or } from 'drizzle-orm';
 import { uploadBuffer, deleteFromCloudinary } from '@/lib/cloudinary';
 import { getCurrentUser, isManager, isPrivileged } from '@/lib/authUtils';
 import { requireAuth } from '@/lib/apiGuard';
@@ -13,9 +14,11 @@ export async function GET(req: NextRequest, { params }: Params) {
     try {
         const { id } = await params;
         await connectDB();
-        const post = id.match(/^[0-9a-fA-F]{24}$/)
-            ? await BlogPost.findById(id)
-            : await BlogPost.findOne({ slug: id });
+        const [post] = await db.select()
+            .from(blogPosts)
+            .where(or(eq(blogPosts.id, id), eq(blogPosts.slug, id)))
+            .limit(1);
+
         if (!post) return NextResponse.json({ error: 'Post not found' }, { status: 404 });
 
         // Enforce draft content safety
@@ -26,7 +29,7 @@ export async function GET(req: NextRequest, { params }: Params) {
             }
         }
 
-        return NextResponse.json(post);
+        return NextResponse.json({ ...post, _id: post.id });
     } catch (err: any) {
         return NextResponse.json({ error: err.message }, { status: 500 });
     }
@@ -37,55 +40,72 @@ export async function PATCH(req: NextRequest, { params }: Params) {
         const guard = await requireAuth(req);
         if (guard) return guard;
         const currentUser = await getCurrentUser(req);
+        if (!currentUser) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
         const { id } = await params;
         const formData = await req.formData();
         
         await connectDB();
-        const post = await BlogPost.findById(id);
+        const [post] = await db.select().from(blogPosts).where(eq(blogPosts.id, id)).limit(1);
         if (!post) return NextResponse.json({ error: 'Post not found' }, { status: 404 });
 
-        // Update basic fields
+        const updates: any = {};
         const fields = ['title', 'description', 'excerpt', 'category', 'status', 'videoUrl', 'author', 'authorRole', 'readTime'];
         fields.forEach(field => {
             const val = formData.get(field);
-            if (val !== null) (post as any)[field] = val;
+            if (val !== null) updates[field] = val;
         });
 
         const featured = formData.get('featured');
-        if (featured !== null) post.featured = featured === 'true';
+        if (featured !== null) updates.featured = featured === 'true';
 
         const tags = formData.get('tags');
-        if (tags) post.tags = JSON.parse(tags as string);
+        if (tags) updates.tags = JSON.parse(tags as string);
 
         const allowLikes = formData.get('allowLikes');
-        if (allowLikes !== null) post.settings.allowLikes = allowLikes === 'true';
-
         const allowComments = formData.get('allowComments');
-        if (allowComments !== null) post.settings.allowComments = allowComments === 'true';
+        const currentSettings = { ...(post.settings as any) };
+        let settingsChanged = false;
+        if (allowLikes !== null) {
+            currentSettings.allowLikes = allowLikes === 'true';
+            settingsChanged = true;
+        }
+        if (allowComments !== null) {
+            currentSettings.allowComments = allowComments === 'true';
+            settingsChanged = true;
+        }
+        if (settingsChanged) {
+            updates.settings = currentSettings;
+        }
 
         // Update image if provided
         const imageFile = formData.get('image') as File | null;
         if (imageFile) {
-            await deleteFromCloudinary(post.image.cloudinaryId);
+            if (post.image && (post.image as any).cloudinaryId) {
+                await deleteFromCloudinary((post.image as any).cloudinaryId);
+            }
             const buffer = Buffer.from(await imageFile.arrayBuffer());
             const uploadResult = await uploadBuffer(buffer, imageFile.type, 'blog-posts');
-            post.image = {
+            updates.image = {
                 url: uploadResult.secure_url,
                 cloudinaryId: uploadResult.public_id
             };
         }
 
-        await post.save();
+        updates.updatedAt = new Date().toISOString();
+
+        await db.update(blogPosts).set(updates).where(eq(blogPosts.id, id));
+        const [updatedPost] = await db.select().from(blogPosts).where(eq(blogPosts.id, id)).limit(1);
+        const responseObj = { ...updatedPost, _id: updatedPost.id };
 
         // ── Privileged Action Notification ──────────────────────────────
         await createManagerNotification(
             currentUser._id.toString(),
             currentUser.name,
             'updated blog post',
-            post.title
+            updatedPost.title
         );
-        return NextResponse.json(post);
+        return NextResponse.json(responseObj);
     } catch (err: any) {
         return NextResponse.json({ error: err.message }, { status: 500 });
     }
@@ -96,15 +116,18 @@ export async function DELETE(req: NextRequest, { params }: Params) {
         const guard = await requireAuth(req);
         if (guard) return guard;
         const currentUser = await getCurrentUser(req);
+        if (!currentUser) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
         const { id } = await params;
         await connectDB();
-        const post = await BlogPost.findById(id);
+        const [post] = await db.select().from(blogPosts).where(eq(blogPosts.id, id)).limit(1);
         if (!post) return NextResponse.json({ error: 'Post not found' }, { status: 404 });
 
-        await deleteFromCloudinary(post.image.cloudinaryId);
+        if (post.image && (post.image as any).cloudinaryId) {
+            await deleteFromCloudinary((post.image as any).cloudinaryId);
+        }
         const postTitle = post.title;
-        await BlogPost.findByIdAndDelete(id);
+        await db.delete(blogPosts).where(eq(blogPosts.id, id));
 
         // ── Privileged Action Notification ──────────────────────────────
         await createManagerNotification(

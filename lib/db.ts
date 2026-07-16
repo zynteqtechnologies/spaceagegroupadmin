@@ -1,46 +1,21 @@
 // lib/db.ts
-import mongoose from 'mongoose';
+import { drizzle } from 'drizzle-orm/libsql';
+import { createClient } from '@libsql/client';
+import * as schema from './schema';
 
-const MONGODB_URI = process.env.MONGODB_URI!;
+const databaseUrl = process.env.TURSO_DATABASE_URL || 'file:local.db';
+const authToken = process.env.TURSO_AUTH_TOKEN || '';
 
-if (!MONGODB_URI) {
-  throw new Error('Please define MONGODB_URI environment variable');
-}
+const client = createClient({
+  url: databaseUrl,
+  authToken: authToken,
+});
 
-/**
- * Global is used here to maintain a cached connection across hot reloads
- * in development. This prevents connections growing exponentially
- * during API Route usage.
- */
-declare global {
-  /* eslint-disable-next-line no-var */
-  var mongoose: {
-    conn: mongoose.Mongoose | null;
-    promise: Promise<mongoose.Mongoose> | null;
-  };
-}
+export const db = drizzle(client, { schema });
 
-let cached = global.mongoose;
-
-if (!cached) {
-  cached = global.mongoose = { conn: null, promise: null };
-}
-
-async function connectDB() {
-  if (cached.conn) {
-    return cached.conn;
-  }
-
-  if (!cached.promise) {
-    const opts = {
-      bufferCommands: false,
-    };
-    cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongoose) => {
-      return mongoose;
-    });
-  }
-  cached.conn = await cached.promise;
-  return cached.conn;
+// Mock connectDB helper to avoid breaking existing import and await calls
+export async function connectDB() {
+  return db;
 }
 
 export default connectDB;

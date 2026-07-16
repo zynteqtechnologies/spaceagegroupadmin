@@ -1,8 +1,12 @@
+// app/api/users/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { connectDB } from '@/lib/mongodb';
-import User from '@/models/User';
+import { connectDB, db } from '@/lib/db';
+import { users } from '@/lib/schema';
+import { eq, inArray, desc } from 'drizzle-orm';
 import { getCurrentUser, isAdministrator } from '@/lib/authUtils';
 import { requireAuth } from '@/lib/apiGuard';
+import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
 
 export async function GET(req: NextRequest) {
     try {
@@ -10,8 +14,20 @@ export async function GET(req: NextRequest) {
         if (guard) return guard;
 
         await connectDB();
-        const users = await User.find({ role: { $in: ['administrator', 'manager'] } }).select('-password').sort({ createdAt: -1 });
-        return NextResponse.json(users);
+        const records = await db.select({
+            id: users.id,
+            name: users.name,
+            email: users.email,
+            role: users.role,
+            createdAt: users.createdAt,
+            updatedAt: users.updatedAt
+        })
+        .from(users)
+        .where(inArray(users.role, ['administrator', 'manager']))
+        .orderBy(desc(users.createdAt));
+
+        const mapped = records.map(u => ({ ...u, _id: u.id }));
+        return NextResponse.json(mapped);
     } catch (err: any) {
         return NextResponse.json({ error: err.message }, { status: 500 });
     }
@@ -29,24 +45,32 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
         }
 
-        const existingUser = await User.findOne({ email });
+        const [existingUser] = await db.select().from(users).where(eq(users.email, email)).limit(1);
         if (existingUser) {
             return NextResponse.json({ error: 'User already exists' }, { status: 400 });
         }
 
-        const user = await User.create({
+        const id = crypto.randomUUID();
+        const now = new Date().toISOString();
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        await db.insert(users).values({
+            id,
             name,
             email,
-            password,
-            role: role || 'administrator'
+            password: hashedPassword,
+            role: (role || 'administrator') as any,
+            createdAt: now,
+            updatedAt: now
         });
 
         const userResponse = {
-            _id: user._id,
-            name: user.name,
-            email: user.email,
-            role: user.role,
-            createdAt: user.createdAt
+            _id: id,
+            id,
+            name,
+            email,
+            role: role || 'administrator',
+            createdAt: now
         };
 
         return NextResponse.json(userResponse, { status: 201 });
