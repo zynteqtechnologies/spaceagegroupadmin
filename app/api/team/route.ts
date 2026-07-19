@@ -70,10 +70,10 @@ export async function POST(req: NextRequest) {
             id,
             name,
             position,
-            study,
-            experience,
-            description,
-            relationToGroup,
+            study: study || '',
+            experience: experience || '',
+            description: description || '',
+            relationToGroup: relationToGroup || '',
             image: {
                 url: uploadResult.secure_url,
                 cloudinaryId: uploadResult.public_id
@@ -83,9 +83,9 @@ export async function POST(req: NextRequest) {
                 instagram: instagram || '',
                 facebook: facebook || ''
             },
-            taglineThought,
-            skills,
-            order,
+            taglineThought: taglineThought || '',
+            skills: skills || [],
+            order: order || 0,
             createdAt: now,
             updatedAt: now
         });

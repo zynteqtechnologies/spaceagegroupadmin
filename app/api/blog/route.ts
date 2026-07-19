@@ -81,8 +81,8 @@ export async function POST(req: NextRequest) {
         const authorRole = formData.get('authorRole') as string || 'Media & Communications';
         const readTime = formData.get('readTime') as string || '5 min read';
         const featured = formData.get('featured') === 'true';
-        const allowLikes = formData.get('allowLikes') === 'true';
-        const allowComments = formData.get('allowComments') === 'true';
+        const allowLikes = formData.get('allowLikes') !== 'false';
+        const allowComments = formData.get('allowComments') !== 'false';
         const imageFile = formData.get('image') as File | null;
 
         if (!title || !description || !category || !imageFile) {

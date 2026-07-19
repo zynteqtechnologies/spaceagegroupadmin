@@ -48,7 +48,26 @@ export async function GET(req: NextRequest) {
             .where(conditions.length > 0 ? and(...conditions) : undefined)
             .orderBy(asc(services.number));
 
-        const mappedServices = records.map(s => ({ ...s, _id: s.id }));
+        const mappedServices = records.map(s => {
+            let stats = s.stats;
+            if (typeof stats === 'string') {
+                try { stats = JSON.parse(stats); } catch { stats = []; }
+            }
+            if (!Array.isArray(stats)) stats = [];
+
+            let features = s.features;
+            if (typeof features === 'string') {
+                try { features = JSON.parse(features); } catch { features = []; }
+            }
+            if (!Array.isArray(features)) features = [];
+
+            return {
+                ...s,
+                _id: s.id,
+                stats,
+                features
+            };
+        });
 
         if (!isUserPrivileged && (!status || status !== 'draft')) {
             await redisSet(cacheKey, mappedServices, 120);
@@ -86,6 +105,18 @@ export async function POST(req: NextRequest) {
         const id = crypto.randomUUID();
         const now = new Date().toISOString();
 
+        let parsedStats = stats;
+        if (typeof parsedStats === 'string') {
+            try { parsedStats = JSON.parse(parsedStats); } catch { parsedStats = []; }
+        }
+        if (!Array.isArray(parsedStats)) parsedStats = [];
+
+        let parsedFeatures = features;
+        if (typeof parsedFeatures === 'string') {
+            try { parsedFeatures = JSON.parse(parsedFeatures); } catch { parsedFeatures = []; }
+        }
+        if (!Array.isArray(parsedFeatures)) parsedFeatures = [];
+
         await db.insert(services).values({
             id,
             title,
@@ -94,8 +125,8 @@ export async function POST(req: NextRequest) {
             category: category as 'Core Development' | 'Consultation',
             tagline,
             description,
-            stats: stats || [],
-            features: features || [],
+            stats: parsedStats,
+            features: parsedFeatures,
             accent: accent || '#c9a84c',
             icon: icon || 'home',
             status: (status || 'published') as 'published' | 'draft',

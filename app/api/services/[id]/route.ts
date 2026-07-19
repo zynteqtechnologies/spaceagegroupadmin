@@ -29,7 +29,25 @@ export async function GET(req: NextRequest, { params }: Params) {
             }
         }
 
-        return NextResponse.json({ ...service, _id: service.id });
+        // Parse JSON fields safely
+        let stats = service.stats;
+        if (typeof stats === 'string') {
+            try { stats = JSON.parse(stats); } catch { stats = []; }
+        }
+        if (!Array.isArray(stats)) stats = [];
+
+        let features = service.features;
+        if (typeof features === 'string') {
+            try { features = JSON.parse(features); } catch { features = []; }
+        }
+        if (!Array.isArray(features)) features = [];
+
+        return NextResponse.json({
+            ...service,
+            _id: service.id,
+            stats,
+            features
+        });
     } catch (err: any) {
         return NextResponse.json({ error: err.message }, { status: 500 });
     }
