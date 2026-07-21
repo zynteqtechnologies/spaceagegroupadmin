@@ -62,7 +62,9 @@ export async function PATCH(req: NextRequest, { params }: Params) {
         if (status !== undefined) updates.status = status;
         if (address !== undefined) updates.address = address.trim();
         if (estYear !== undefined) updates.estYear = estYear.trim();
-        if (featured !== undefined) updates.featured = !!featured;
+        if (featured !== undefined) {
+            updates.featured = (featured === true || featured === 'true' || featured === 1 || featured === '1') ? 1 : 0;
+        }
         if (category !== undefined) updates.category = category.trim();
         if (area !== undefined) updates.area = area.trim();
         if (units !== undefined) updates.units = units ? Number(units) : 0;
@@ -85,7 +87,11 @@ export async function PATCH(req: NextRequest, { params }: Params) {
 
         await db.update(projects).set(updates).where(eq(projects.id, project.id));
         const [updatedProject] = await db.select().from(projects).where(eq(projects.id, project.id)).limit(1);
-        const responseObj = { ...updatedProject, _id: updatedProject.id };
+        const responseObj = { 
+            ...updatedProject, 
+            _id: updatedProject.id,
+            featured: Boolean((updatedProject.featured as any) === true || (updatedProject.featured as any) === 1 || (updatedProject.featured as any) === '1' || (updatedProject.featured as any) === 'true'),
+        };
  
         // ── Privileged Action Notification ──────────────────────────────
         await createManagerNotification(
@@ -124,9 +130,20 @@ export async function DELETE(req: NextRequest, { params }: Params) {
 
         const cleanupTasks: Promise<void>[] = [];
 
-        const deleteMedia = (items: any[], type: 'image' | 'video' = 'image') => {
-            (items || []).forEach((item) => {
-                if (item.cloudinaryId) {
+        const deleteMedia = (items: any, type: 'image' | 'video' = 'image') => {
+            let list: any[] = [];
+            if (Array.isArray(items)) {
+                list = items;
+            } else if (typeof items === 'string') {
+                try {
+                    const parsed = JSON.parse(items);
+                    if (Array.isArray(parsed)) list = parsed;
+                } catch (e) {
+                    list = [];
+                }
+            }
+            list.forEach((item) => {
+                if (item && item.cloudinaryId) {
                     cleanupTasks.push(
                         deleteFromCloudinary(item.cloudinaryId, item.mediaType === 'video' ? 'video' : type)
                             .catch((e) => console.error('Cloudinary delete failed:', e))
@@ -135,9 +152,9 @@ export async function DELETE(req: NextRequest, { params }: Params) {
             });
         };
 
-        deleteMedia(project.heroImages as any[]);
-        deleteMedia(project.floorPlans as any[]);
-        deleteMedia(project.sampleHousePhotos as any[]);
+        deleteMedia(project.heroImages);
+        deleteMedia(project.floorPlans);
+        deleteMedia(project.sampleHousePhotos);
 
         if ((project.layoutPlan as any)?.cloudinaryId) {
             cleanupTasks.push(
@@ -155,6 +172,7 @@ export async function DELETE(req: NextRequest, { params }: Params) {
         await Promise.allSettled(cleanupTasks);
         const projectTitle = project.title;
         await db.delete(projects).where(eq(projects.id, project.id));
+        await redisDel('cache:projects:all', 'cache:projects:upcoming', 'cache:projects:ongoing', 'cache:projects:completed');
  
         // ── Privileged Action Notification ──────────────────────────────
         await createManagerNotification(

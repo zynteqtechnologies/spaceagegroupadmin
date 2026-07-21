@@ -47,7 +47,11 @@ export async function GET(req: NextRequest) {
         .where(conditions.length > 0 ? and(...conditions) : undefined)
         .orderBy(desc(projects.createdAt));
 
-        const mappedProjects = records.map(p => ({ ...p, _id: p.id }));
+        const mappedProjects = records.map(p => ({
+            ...p,
+            _id: p.id,
+            featured: Boolean((p.featured as any) === true || (p.featured as any) === 1 || (p.featured as any) === '1' || (p.featured as any) === 'true'),
+        }));
 
         await redisSet(cacheKey, mappedProjects, 120);
         return NextResponse.json(mappedProjects, { headers: { 'X-Cache': 'MISS' } });

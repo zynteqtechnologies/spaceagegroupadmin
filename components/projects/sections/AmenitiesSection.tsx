@@ -32,7 +32,7 @@ export default function AmenitiesSection({ project, onUpdate }: Props) {
     const addRow = () => setItems(prev => [...prev, { name: '', icon: '', category: 'Other', order: prev.length }]);
 
     const addPreset = (preset: typeof PRESETS[0]) => {
-        const already = items.some(i => i.name.toLowerCase() === preset.name.toLowerCase());
+        const already = items.some(i => (i.name || i.title || '').toLowerCase() === preset.name.toLowerCase());
         if (already) return;
         setItems(prev => [...prev, { name: preset.name, icon: preset.icon, category: preset.category, order: prev.length }]);
     };
@@ -71,7 +71,7 @@ export default function AmenitiesSection({ project, onUpdate }: Props) {
                     <p className="text-xs font-semibold text-slate-600 uppercase tracking-wide mb-2">Quick Add</p>
                     <div className="flex flex-wrap gap-2">
                         {PRESETS.map((preset) => {
-                            const added = items.some(i => i.name.toLowerCase() === preset.name.toLowerCase());
+                            const added = items.some(i => (i.name || i.title || '').toLowerCase() === preset.name.toLowerCase());
                             return (
                                 <button
                                     key={preset.name}
@@ -115,7 +115,7 @@ export default function AmenitiesSection({ project, onUpdate }: Props) {
                                         <input
                                             type="text"
                                             placeholder="Amenity name"
-                                            value={item.name}
+                                            value={item.name || item.title || ''}
                                             onChange={e => updateRow(i, { name: e.target.value })}
                                             className="w-full border border-transparent focus:border-indigo-300 rounded-lg px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-indigo-50 transition-all bg-transparent focus:bg-white"
                                         />
@@ -183,7 +183,7 @@ export default function AmenitiesSection({ project, onUpdate }: Props) {
                         {items.map((item, i) => (
                             <span key={i} className="flex items-center gap-1.5 bg-slate-50 border border-slate-100 text-slate-700 text-xs font-medium px-3 py-1.5 rounded-lg">
                                 {item.icon && <span>{item.icon}</span>}
-                                {item.name}
+                                {item.name || item.title}
                             </span>
                         ))}
                     </div>

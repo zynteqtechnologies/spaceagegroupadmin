@@ -19,8 +19,10 @@ export async function GET() {
             .from(timelineEvents)
             .orderBy(asc(timelineEvents.order), asc(timelineEvents.year));
 
-        await redisSet(cacheKey, events, 300);
-        return NextResponse.json(events, { headers: { 'X-Cache': 'MISS' } });
+        const mappedEvents = events.map(e => ({ ...e, _id: e.id }));
+
+        await redisSet(cacheKey, mappedEvents, 300);
+        return NextResponse.json(mappedEvents, { headers: { 'X-Cache': 'MISS' } });
     } catch (err: any) {
         return NextResponse.json({ error: err.message }, { status: 500 });
     }

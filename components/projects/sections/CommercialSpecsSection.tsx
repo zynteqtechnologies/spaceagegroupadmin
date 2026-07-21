@@ -69,8 +69,8 @@ export default function CommercialSpecsSection({ project, onUpdate }: Props) {
                                 <input
                                     type="text"
                                     placeholder="e.g. Price Range"
-                                    value={item.label}
-                                    onChange={e => updateRow(i, { label: e.target.value })}
+                                    value={item.label || item.category || ''}
+                                    onChange={e => updateRow(i, { label: e.target.value, category: e.target.value })}
                                     className="w-full border border-transparent focus:border-indigo-300 rounded-lg px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-indigo-50 transition-all bg-transparent focus:bg-white"
                                 />
                             </div>
@@ -78,8 +78,8 @@ export default function CommercialSpecsSection({ project, onUpdate }: Props) {
                                 <textarea
                                     placeholder="e.g. ₹45L – ₹75L"
                                     rows={1}
-                                    value={item.value}
-                                    onChange={e => updateRow(i, { value: e.target.value })}
+                                    value={item.value || item.detail || ''}
+                                    onChange={e => updateRow(i, { value: e.target.value, detail: e.target.value })}
                                     className="w-full min-h-[38px] resize-y border border-transparent focus:border-indigo-300 rounded-lg px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-indigo-50 transition-all bg-transparent focus:bg-white"
                                 />
                             </div>

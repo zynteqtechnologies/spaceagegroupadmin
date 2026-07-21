@@ -112,7 +112,7 @@ export default function MediaPage() {
                 ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                         {mediaList.map((media) => {
-                            const projectTitle = typeof media.project === 'object' ? media.project.title : 'Unknown Project';
+                            const projectTitle = (media.project && typeof media.project === 'object') ? (media.project as any).title : (typeof media.project === 'string' ? media.project : 'Unknown Project');
                             const firstItem = media.items[0];
                             const imgCount = media.items.filter(i => i.category === 'image').length;
                             const vidCount = media.items.filter(i => i.category === 'video').length;

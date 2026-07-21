@@ -116,10 +116,10 @@ export default function FloorPlansSection({ project, onUpdate }: Props) {
                         )}
                     </div>
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 p-4">
-                        {existing.map((fp) => {
+                        {existing.map((fp, idx) => {
                             const isDeleted = fp._id ? deletions.has(fp._id) : false;
                             return (
-                                <div key={fp._id}
+                                <div key={fp._id || fp.url || idx}
                                     className={`group relative rounded-xl overflow-hidden border border-slate-100 transition-all ${isDeleted ? 'opacity-40 ring-2 ring-rose-400' : ''}`}
                                 >
                                     {/* eslint-disable-next-line @next/next/no-img-element */}

@@ -4,6 +4,7 @@ export type { MediaItem, MediaType } from './project';
 
 export interface MediaDoc {
     _id: string;
+    id?: string;
     project: string | ProjectDoc;
     title: string;
     items: MediaItem[];
@@ -13,6 +14,7 @@ export interface MediaDoc {
 
 export interface HeroImageDoc {
     _id: string;
+    id?: string;
     images: MediaItem[];
     createdAt?: string;
     updatedAt?: string;

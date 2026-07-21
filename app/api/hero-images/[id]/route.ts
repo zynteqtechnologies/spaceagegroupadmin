@@ -8,6 +8,9 @@ import { type NewMediaDetail } from '@/types/media';
 import { requireAuth } from '@/lib/apiGuard';
 import crypto from 'crypto';
 
+import { normalizeHeroDoc } from '@/lib/heroUtils';
+import { redisDel } from '@/lib/redis';
+
 type Params = { params: Promise<{ id: string }> };
 
 interface MediaObject {
@@ -129,10 +132,8 @@ export async function PUT(req: NextRequest, { params }: Params) {
     }).where(eq(heroImages.id, id));
 
     const [updatedHeroImage] = await db.select().from(heroImages).where(eq(heroImages.id, id)).limit(1);
-    const responseObj = {
-      ...updatedHeroImage,
-      _id: updatedHeroImage.id
-    };
+    await redisDel('cache:hero-images');
+    const responseObj = normalizeHeroDoc(updatedHeroImage);
 
     return NextResponse.json({ message: 'Updated successfully', heroImage: responseObj });
   } catch (err: unknown) {

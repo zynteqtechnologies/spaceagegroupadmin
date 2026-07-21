@@ -33,6 +33,13 @@ interface SelectableMedia extends MediaItem {
     selectionId: string;
 }
 
+interface ExistingItemMeta {
+    title: string;
+    description: string;
+    category: 'image' | 'video' | 'brochure' | 'flyer' | 'other';
+    isMainImage: boolean;
+}
+
 export default function EditMediaPage({ params }: { params: Promise<{ id: string }> }) {
     const router = useRouter();
     const { id } = use(params);
@@ -47,6 +54,8 @@ export default function EditMediaPage({ params }: { params: Promise<{ id: string
     const [selectedProject, setSelectedProject] = useState<ProjectDoc | null>(null);
     const [projectMedia, setProjectMedia] = useState<SelectableMedia[]>([]);
     const [selectedExistingIds, setSelectedExistingIds] = useState<Set<string>>(new Set());
+    // Editable metadata for selected existing project media items
+    const [selectedExistingMeta, setSelectedExistingMeta] = useState<Record<string, ExistingItemMeta>>({});
 
     // New uploads & YouTube links
     const [newItems, setNewItems] = useState<NewItemPreview[]>([]);
@@ -72,17 +81,17 @@ export default function EditMediaPage({ params }: { params: Promise<{ id: string
                             if (proj) {
                                 setSelectedProject(proj);
                                 const allMedia: SelectableMedia[] = [
-                                    ...(proj.heroImages || []).map(m => ({ ...m, selectionId: m._id || `hero-${m.cloudinaryId}`, isInProjects: true })),
-                                    ...(proj.floorPlans || []).map(m => ({ ...m, selectionId: m._id || `fp-${m.cloudinaryId}`, isInProjects: true })),
-                                    ...(proj.layoutPlan?.url ? [{ ...proj.layoutPlan, selectionId: proj.layoutPlan._id || `layout-${proj.layoutPlan.cloudinaryId}`, isInProjects: true }] : []),
-                                    ...(proj.sampleHousePhotos || []).map(m => ({ ...m, selectionId: m._id || `sample-${m.cloudinaryId}`, isInProjects: true })),
+                                    ...(proj.heroImages || []).map((m, idx) => ({ ...m, selectionId: m._id || (m.cloudinaryId ? `hero-${m.cloudinaryId}` : `hero-${idx}`), isInProjects: true })),
+                                    ...(proj.floorPlans || []).map((m, idx) => ({ ...m, selectionId: m._id || (m.cloudinaryId ? `fp-${m.cloudinaryId}` : `fp-${idx}`), isInProjects: true })),
+                                    ...(proj.layoutPlan?.url ? [{ ...proj.layoutPlan, selectionId: proj.layoutPlan._id || (proj.layoutPlan.cloudinaryId ? `layout-${proj.layoutPlan.cloudinaryId}` : 'layout-0'), isInProjects: true }] : []),
+                                    ...(proj.sampleHousePhotos || []).map((m, idx) => ({ ...m, selectionId: m._id || (m.cloudinaryId ? `sample-${m.cloudinaryId}` : `sample-${idx}`), isInProjects: true })),
                                     ...(proj.brochure?.url ? [{
                                         url: proj.brochure.url,
                                         cloudinaryId: proj.brochure.cloudinaryId,
                                         title: proj.brochure.fileName || 'Brochure',
                                         mediaType: 'document' as const,
                                         category: 'brochure' as const,
-                                        selectionId: proj.brochure.cloudinaryId || 'brochure-static-id',
+                                        selectionId: proj.brochure.cloudinaryId ? `brochure-${proj.brochure.cloudinaryId}` : `brochure-${proj.brochure.url?.slice(-16) || 'static'}`,
                                         isInProjects: true
                                     } as any] : [])
                                 ];
@@ -104,13 +113,30 @@ export default function EditMediaPage({ params }: { params: Promise<{ id: string
         setItems(prev => prev.map((item, i) => i === index ? { ...item, ...patch } : item));
     };
 
-    const toggleExistingSelection = (selectionId: string) => {
+    const toggleExistingSelection = (selectionId: string, item: SelectableMedia) => {
         setSelectedExistingIds(prev => {
             const next = new Set(prev);
-            if (next.has(selectionId)) next.delete(selectionId);
-            else next.add(selectionId);
+            if (next.has(selectionId)) {
+                next.delete(selectionId);
+                setSelectedExistingMeta(m => { const n = { ...m }; delete n[selectionId]; return n; });
+            } else {
+                next.add(selectionId);
+                setSelectedExistingMeta(m => ({
+                    ...m,
+                    [selectionId]: {
+                        title: item.title || '',
+                        description: (item as any).description || '',
+                        category: (item.category as any) || 'image',
+                        isMainImage: !!(item as any).isMainImage,
+                    }
+                }));
+            }
             return next;
         });
+    };
+
+    const updateExistingMeta = (id: string, patch: Partial<ExistingItemMeta>) => {
+        setSelectedExistingMeta(m => ({ ...m, [id]: { ...m[id], ...patch } }));
     };
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -189,6 +215,14 @@ export default function EditMediaPage({ params }: { params: Promise<{ id: string
             .filter(pm => selectedExistingIds.has(pm.selectionId))
             .map(pm => {
                 const { selectionId, ...rest } = pm;
+                // Apply user-edited metadata overrides
+                const meta = selectedExistingMeta[selectionId];
+                if (meta) {
+                    rest.title = meta.title || rest.title;
+                    (rest as any).description = meta.description;
+                    rest.category = meta.category as any;
+                    (rest as any).isMainImage = meta.isMainImage;
+                }
                 return { ...rest, isInProjects: true };
             });
 
@@ -318,7 +352,7 @@ export default function EditMediaPage({ params }: { params: Promise<{ id: string
                                         return (
                                             <div
                                                 key={selectId}
-                                                onClick={() => toggleExistingSelection(selectId)}
+                                                onClick={() => toggleExistingSelection(selectId, media)}
                                                 className={`group relative aspect-square rounded-sm overflow-hidden cursor-pointer border-2 transition-all
                                                     ${isSelected ? 'border-indigo-500 ring-2 ring-indigo-50' : 'border-slate-100 opacity-60 hover:opacity-100'}`}
                                             >
@@ -399,6 +433,115 @@ export default function EditMediaPage({ params }: { params: Promise<{ id: string
                         </div>
                     </section>
                 </div>
+
+                {/* ── Selected Existing Assets — Editable Metadata ─────────────── */}
+                {selectedExistingIds.size > 0 && (
+                    <section className="space-y-4">
+                        <h2 className="text-xs font-semibold text-slate-600 uppercase tracking-wide flex items-center gap-2">
+                            <CheckCircle2 size={13} className="text-indigo-500" />
+                            Selected from Project ({selectedExistingIds.size}) — Edit Metadata
+                        </h2>
+                        <div className="grid grid-cols-1 gap-4">
+                            {projectMedia
+                                .filter(m => selectedExistingIds.has(m.selectionId))
+                                .map((media) => {
+                                    const sid = media.selectionId;
+                                    const meta = selectedExistingMeta[sid] || {
+                                        title: media.title || '',
+                                        description: (media as any).description || '',
+                                        category: (media.category as any) || 'image',
+                                        isMainImage: false,
+                                    };
+                                    return (
+                                        <div key={sid} className="flex flex-col md:flex-row gap-4 bg-white p-4 rounded-sm border border-indigo-100 shadow-sm">
+                                            {/* Thumbnail */}
+                                            <div className="flex items-center gap-4 shrink-0">
+                                                <div className="w-24 h-24 rounded-sm overflow-hidden bg-[#f9fbfd] border border-slate-100 shrink-0 relative">
+                                                    <div className="absolute top-1 left-1 z-10">
+                                                        <span className="bg-indigo-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-sm uppercase">Existing</span>
+                                                    </div>
+                                                    {media.mediaType === 'video' ? (
+                                                        <div className="w-full h-full flex items-center justify-center bg-slate-800">
+                                                            <Video size={24} className="text-white/50" />
+                                                        </div>
+                                                    ) : media.mediaType === 'document' ? (
+                                                        <div className="w-full h-full flex items-center justify-center bg-rose-50">
+                                                            <FileText size={24} className="text-rose-500" />
+                                                        </div>
+                                                    ) : (
+                                                        // eslint-disable-next-line @next/next/no-img-element
+                                                        <img src={media.url} alt={media.title} className="w-full h-full object-cover" />
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            {/* Editable Fields */}
+                                            <div className="flex-1 space-y-3">
+                                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                                    <div className="space-y-1.5">
+                                                        <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Asset Title</div>
+                                                        <input
+                                                            type="text"
+                                                            value={meta.title}
+                                                            onChange={(e) => updateExistingMeta(sid, { title: e.target.value })}
+                                                            className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-900 outline-none focus:border-indigo-400 transition-all"
+                                                        />
+                                                    </div>
+
+                                                    <div className="space-y-1.5">
+                                                        <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Category</div>
+                                                        <select
+                                                            value={meta.category}
+                                                            onChange={(e) => updateExistingMeta(sid, { category: e.target.value as any })}
+                                                            className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-900 outline-none focus:border-indigo-400 transition-all cursor-pointer appearance-none"
+                                                        >
+                                                            <option value="image">Image</option>
+                                                            <option value="video">Video</option>
+                                                            <option value="brochure">Brochure</option>
+                                                            <option value="flyer">Flyer</option>
+                                                            <option value="other">Other</option>
+                                                        </select>
+                                                    </div>
+
+                                                    <div className="space-y-1.5 relative">
+                                                        <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Description</div>
+                                                        <div className="relative">
+                                                            <input
+                                                                type="text"
+                                                                placeholder="Optional description..."
+                                                                value={meta.description}
+                                                                onChange={(e) => updateExistingMeta(sid, { description: e.target.value })}
+                                                                className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-medium text-slate-600 outline-none focus:border-indigo-400 transition-all pr-12"
+                                                            />
+                                                            <button
+                                                                onClick={() => toggleExistingSelection(sid, media)}
+                                                                className="absolute right-1 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg flex items-center justify-center text-slate-300 hover:text-rose-500 hover:bg-rose-50 transition-all cursor-pointer"
+                                                                title="Deselect"
+                                                            >
+                                                                <Trash2 size={16} />
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex items-center pt-1">
+                                                    <label className="flex items-center gap-2 cursor-pointer select-none">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={!!meta.isMainImage}
+                                                            onChange={(e) => updateExistingMeta(sid, { isMainImage: e.target.checked })}
+                                                            className="w-4 h-4 rounded border-slate-200 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                                                        />
+                                                        <span className="text-xs font-semibold text-slate-600 uppercase tracking-wider">Featured / Main Image</span>
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                        </div>
+                    </section>
+                )}
 
                 {/* Previews of newly uploaded/added elements */}
                 {newItems.length > 0 && (

@@ -22,14 +22,17 @@ export default function MediaGallery({ doc, onUpdate }: MediaGalleryProps) {
   const current = lightboxIndex !== null ? filtered[lightboxIndex] : null;
 
   const handleDelete = async (media: MediaItem) => {
-    if (!media._id) return;
-    const confirmed = await showConfirm('Delete Media', `Delete "${media.title}"?`);
+    const mediaId = media._id || media.id;
+    if (!mediaId) return;
+    const confirmed = await showConfirm('Delete Media', `Delete "${media.title || 'this image'}"?`);
     if (!confirmed) return;
-    setDeleting(media._id);
+    setDeleting(mediaId);
     try {
-      const updated = await deleteMediaItem(doc._id, media._id);
+      const docId = doc._id || doc.id || '';
+      if (!docId) return;
+      const updated = await deleteMediaItem(docId, mediaId);
       onUpdate?.(updated);
-      showAlert('Deleted', `Media "${media.title}" has been deleted.`, 'success');
+      showAlert('Deleted', `Media "${media.title || 'image'}" has been deleted.`, 'success');
     } catch (err) {
       showAlert('Error', err instanceof Error ? err.message : 'Delete failed', 'error');
     } finally {

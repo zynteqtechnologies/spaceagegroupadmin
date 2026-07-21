@@ -8,6 +8,7 @@ export type VirtualTourType = 'matterport' | 'youtube' | 'custom' | 'other';
 
 export interface MediaItem {
     _id?: string;
+    id?: string;
     url: string;
     cloudinaryId?: string;
     alt?: string;
@@ -82,8 +83,10 @@ export interface FloorPlanPreview {
 
 export interface SpecificationItem {
     _id?: string;
-    label: string;
-    value: string;
+    label?: string;
+    value?: string;
+    category?: string;
+    detail?: string;
     order?: number;
 }
 
@@ -92,6 +95,7 @@ export interface SpecificationItem {
 export interface AmenityItem {
     _id?: string;
     name: string;
+    title?: string;
     icon?: string;
     category?: string;
     order?: number;

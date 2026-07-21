@@ -49,28 +49,31 @@ export async function POST(req: NextRequest, { params }: Params) {
         const postIdStr = post.id;
         const now = new Date().toISOString();
 
-        if (action === 'like') {
+        if (action === 'like' || action === 'unlike') {
             const settings = post.settings as any;
             if (settings && settings.allowLikes === false) {
                 return NextResponse.json({ error: 'Likes disabled' }, { status: 403 });
             }
 
-            const newLikesCount = (post.likesCount || 0) + 1;
+            const delta = action === 'like' ? 1 : -1;
+            const newLikesCount = Math.max(0, (post.likesCount || 0) + delta);
             await db.update(blogPosts)
                 .set({ likesCount: newLikesCount, updatedAt: now })
                 .where(eq(blogPosts.id, postIdStr));
 
-            // Create notification
-            await db.insert(notifications).values({
-                id: crypto.randomUUID(),
-                userId: 'system',
-                managerName: 'Visitor',
-                action: 'liked post',
-                target: post.title,
-                isRead: false,
-                createdAt: now,
-                updatedAt: now
-            });
+            if (action === 'like') {
+                // Create notification
+                await db.insert(notifications).values({
+                    id: crypto.randomUUID(),
+                    userId: 'system',
+                    managerName: 'Visitor',
+                    action: 'liked post',
+                    target: post.title,
+                    isRead: false,
+                    createdAt: now,
+                    updatedAt: now
+                });
+            }
 
             return NextResponse.json({ likesCount: newLikesCount });
         }

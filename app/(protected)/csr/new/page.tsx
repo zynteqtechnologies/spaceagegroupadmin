@@ -16,6 +16,7 @@ interface NewItemPreview {
     description: string;
     category: 'image' | 'video' | 'other';
     provider: 'cloudinary' | 'youtube' | 'none';
+    isMainImage?: boolean;
 }
 
 export default function NewCSRPage() {
@@ -32,6 +33,7 @@ export default function NewCSRPage() {
         longDescription: '',
         impact: '',
         color: '#c9a84c',
+        likes: '0',
     });
 
     const [newItems, setNewItems] = useState<NewItemPreview[]>([]);
@@ -41,8 +43,10 @@ export default function NewCSRPage() {
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (!e.target.files) return;
         const files = Array.from(e.target.files);
+        const hasExistingMain = newItems.some(i => i.isMainImage);
         const previews = files.map((file, i) => {
             const isVideo = file.type.startsWith('video/');
+            const isMain = !hasExistingMain && i === 0 && !isVideo;
             return {
                 file,
                 previewUrl: URL.createObjectURL(file),
@@ -50,6 +54,7 @@ export default function NewCSRPage() {
                 description: '',
                 category: (isVideo ? 'video' : 'image') as any,
                 provider: 'cloudinary' as const,
+                isMainImage: isMain,
             };
         });
         setNewItems(prev => [...prev, ...previews]);
@@ -64,11 +69,19 @@ export default function NewCSRPage() {
             title: 'YouTube Video',
             description: '',
             category: 'video',
-            provider: 'youtube'
+            provider: 'youtube',
+            isMainImage: false,
         };
         setNewItems(prev => [...prev, newItem]);
         setYoutubeUrl('');
         setError(null);
+    };
+
+    const setMainItem = (targetIndex: number) => {
+        setNewItems(prev => prev.map((item, i) => ({
+            ...item,
+            isMainImage: i === targetIndex,
+        })));
     };
 
     const updateNewItem = (index: number, patch: Partial<NewItemPreview>) => {
@@ -112,6 +125,7 @@ export default function NewCSRPage() {
             formData.append('longDescription', longDescription);
             formData.append('impact', impact);
             formData.append('color', form.color);
+            formData.append('likes', form.likes || '0');
 
             const filesToUpload = newItems.filter(p => !!p.file).map(p => p.file!);
             const newDetails = newItems.map(p => ({
@@ -119,6 +133,7 @@ export default function NewCSRPage() {
                 description: p.description,
                 category: p.category,
                 provider: p.provider,
+                isMainImage: !!p.isMainImage,
                 url: p.provider === 'youtube' ? p.externalUrl : undefined,
             }));
 
@@ -243,6 +258,18 @@ export default function NewCSRPage() {
                                 className="w-full border border-slate-200 rounded-sm px-4 py-2 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-50 transition-all bg-white text-slate-800 font-bold"
                             />
                         </div>
+
+                        <div className="space-y-1">
+                            <label className="text-xs font-bold text-slate-600 uppercase tracking-wider block">Likes Counter</label>
+                            <input
+                                type="number"
+                                min="0"
+                                value={form.likes}
+                                onChange={e => setForm({ ...form, likes: e.target.value })}
+                                placeholder="0"
+                                className="w-full border border-slate-200 rounded-sm px-4 py-2 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-50 transition-all bg-white text-slate-800 font-bold"
+                            />
+                        </div>
                     </div>
 
                     <div className="bg-slate-900 p-6 rounded-sm shadow-sm text-white space-y-3">
@@ -250,7 +277,7 @@ export default function NewCSRPage() {
                             <Info size={12} /> Tips
                         </h3>
                         <p className="text-xs text-slate-300 leading-relaxed">
-                            Upload high-quality images and name them appropriately to present details clearly inside the visitor page lightbox modals.
+                            Select 1 image as the <strong>Main Featured Image</strong> to highlight it as the primary card preview on the user website and admin list.
                         </p>
                     </div>
                 </div>
@@ -341,36 +368,30 @@ export default function NewCSRPage() {
                             />
                         </div>
 
-                        {/* YouTube video block */}
-                        <div className="space-y-2 pt-4 border-t border-slate-100">
-                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Add YouTube Link</label>
-                            <div className="flex gap-2">
-                                <input 
-                                    type="text"
-                                    value={youtubeUrl}
-                                    onChange={e => setYoutubeUrl(e.target.value)}
-                                    placeholder="Paste YouTube video URL..."
-                                    className="flex-1 border border-slate-200 rounded-sm px-3 py-1.5 text-xs outline-none focus:border-indigo-400 transition-all bg-white"
-                                />
-                                <button
-                                    type="button"
-                                    onClick={addYoutubeVideo}
-                                    className="bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs px-3 rounded-sm flex items-center justify-center transition-colors"
-                                >
-                                    <Plus size={14} />
-                                </button>
-                            </div>
+                        {/* YouTube video section */}
+                        <div className="flex items-center gap-2">
+                            <input
+                                type="text"
+                                value={youtubeUrl}
+                                onChange={e => setYoutubeUrl(e.target.value)}
+                                placeholder="Paste YouTube video URL..."
+                                className="flex-1 border border-slate-200 rounded px-3 py-2 text-xs outline-none focus:border-indigo-400 bg-white"
+                            />
+                            <button
+                                type="button"
+                                onClick={addYoutubeVideo}
+                                className="bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-xs px-4 py-2 rounded flex items-center gap-1.5 transition-colors border border-rose-100"
+                            >
+                                <Youtube size={14} /> Add Video
+                            </button>
                         </div>
 
-                        {/* Asset Queue List */}
-                        <div className="space-y-4 pt-4 border-t border-slate-100">
-                            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Asset Queue ({newItems.length})</div>
-                            {newItems.length === 0 ? (
-                                <div className="text-center py-8 text-xs text-slate-300 italic font-medium">No assets added yet</div>
-                            ) : (
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* Asset items queue */}
+                        <div className="space-y-4">
+                            {newItems.length > 0 && (
+                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                                     {newItems.map((item, idx) => (
-                                        <div key={idx} className="border border-slate-100 rounded-xl p-4 bg-slate-50/50 relative space-y-3 flex flex-col justify-between">
+                                        <div key={idx} className="bg-slate-50 border border-slate-200 rounded-xl p-3 relative space-y-3">
                                             <button 
                                                 type="button"
                                                 onClick={() => removeNewItem(idx)}
@@ -400,6 +421,20 @@ export default function NewCSRPage() {
                                                         />
                                                     )}
                                                 </div>
+
+                                                {item.category !== 'video' && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setMainItem(idx)}
+                                                        className={`text-[10px] font-bold px-2 py-1 rounded transition-colors w-full flex items-center justify-center gap-1 ${
+                                                            item.isMainImage 
+                                                                ? 'bg-amber-400 text-white shadow-sm font-black' 
+                                                                : 'bg-white hover:bg-amber-50 text-slate-600 hover:text-amber-600 border border-slate-200'
+                                                        }`}
+                                                    >
+                                                        {item.isMainImage ? '★ Main Featured Image' : '☆ Set as Main Image'}
+                                                    </button>
+                                                )}
 
                                                 <div className="space-y-2 pt-1">
                                                     <div className="space-y-1">

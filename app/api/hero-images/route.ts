@@ -7,6 +7,7 @@ import { uploadBuffer, CloudinaryResult } from '@/lib/cloudinary';
 import { type NewMediaDetail } from '@/types/media';
 import { requireAuth } from '@/lib/apiGuard';
 import { redisGet, redisSet, redisDel } from '@/lib/redis';
+import { normalizeHeroDoc } from '@/lib/heroUtils';
 import crypto from 'crypto';
 
 // ── GET /api/hero-images ──────────────────────────────────────────────────────
@@ -27,7 +28,8 @@ export async function GET() {
       );
     }
 
-    const result = { ...heroImage, _id: heroImage.id };
+    const result = normalizeHeroDoc(heroImage);
+
     await redisSet(cacheKey, result, 120);
     return NextResponse.json(result, { headers: { 'X-Cache': 'MISS' } });
   } catch (err: unknown) {
@@ -59,8 +61,11 @@ export async function POST(req: NextRequest) {
         const buffer = Buffer.from(await file.arrayBuffer());
         const result: CloudinaryResult = await uploadBuffer(buffer, file.type);
         const isVideo = file.type.startsWith('video/');
+        const itemId = crypto.randomUUID();
 
         return {
+          _id:          itemId,
+          id:           itemId,
           url:          result.secure_url,
           cloudinaryId: result.public_id,
           alt:          details[i]?.alt          ?? '',
@@ -81,12 +86,20 @@ export async function POST(req: NextRequest) {
     let [heroImageRecord] = await db.select().from(heroImages).limit(1);
     const now = new Date().toISOString();
 
+    const hasNewMain = mediaObjects.some(m => m.isMainImage);
+
     if (heroImageRecord) {
-      const updatedImages = [...(heroImageRecord.images as any[]), ...mediaObjects];
+      let existingImages = (heroImageRecord.images as any[]) || [];
+      if (hasNewMain) {
+        existingImages = existingImages.map(img => ({ ...img, isMainImage: false }));
+      }
+      const updatedImages = [...existingImages, ...mediaObjects];
+
       await db.update(heroImages).set({
         images: updatedImages,
         updatedAt: now
       }).where(eq(heroImages.id, heroImageRecord.id));
+
       [heroImageRecord] = await db.select().from(heroImages).where(eq(heroImages.id, heroImageRecord.id)).limit(1);
     } else {
       const id = crypto.randomUUID();
@@ -99,10 +112,9 @@ export async function POST(req: NextRequest) {
       [heroImageRecord] = await db.select().from(heroImages).where(eq(heroImages.id, id)).limit(1);
     }
 
-    const responseObj = {
-      ...heroImageRecord,
-      _id: heroImageRecord.id
-    };
+    await redisDel('cache:hero-images');
+
+    const responseObj = normalizeHeroDoc(heroImageRecord);
 
     return NextResponse.json(
       { message: 'Uploaded successfully', heroImage: responseObj },

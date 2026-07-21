@@ -111,10 +111,10 @@ export default function SampleHouseSection({ project, onUpdate }: Props) {
                         )}
                     </div>
                     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 p-4">
-                        {existing.map((photo) => {
+                        {existing.map((photo, idx) => {
                             const isDeleted = photo._id ? deletions.has(photo._id) : false;
                             return (
-                                <div key={photo._id}
+                                <div key={photo._id || photo.url || idx}
                                     className={`group relative rounded-xl overflow-hidden border border-slate-100 transition-all ${isDeleted ? 'opacity-40 ring-2 ring-rose-400' : ''}`}
                                 >
                                     {/* eslint-disable-next-line @next/next/no-img-element */}

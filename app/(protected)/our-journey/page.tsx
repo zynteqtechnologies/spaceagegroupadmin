@@ -6,7 +6,8 @@ import { Milestone, Plus, Pencil, Trash2, Loader2, ChevronRight, AlertCircle } f
 import { useModal } from '@/context/ModalContext';
 
 interface TimelineEvent {
-    _id: string;
+    _id?: string;
+    id?: string;
     year: string;
     title: string;
     description: string;
@@ -42,7 +43,7 @@ export default function JourneyEventsPage() {
         try {
             const res = await fetch(`/api/timeline/${id}`, { method: 'DELETE' });
             if (!res.ok) throw new Error('Failed to delete milestone');
-            setEvents(events.filter(e => e._id !== id));
+            setEvents(events.filter(e => (e._id || e.id) !== id));
             showAlert('Deleted', `Milestone "${label}" has been deleted.`, 'success');
         } catch (err: any) {
             showAlert('Error', err.message || 'Failed to delete milestone', 'error');
@@ -119,37 +120,40 @@ export default function JourneyEventsPage() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
-                                {events.map((event) => (
-                                    <tr key={event._id} className="hover:bg-slate-50/50 transition-colors">
-                                        <td className="px-6 py-4 font-bold text-blue-600">{event.year}</td>
-                                        <td className="px-6 py-4 font-semibold text-slate-900">{event.title}</td>
-                                        <td className="px-6 py-4 text-slate-500 max-w-xs truncate hidden md:table-cell">{event.description}</td>
-                                        <td className="px-6 py-4 text-center font-medium text-slate-700">{event.order}</td>
-                                        <td className="px-6 py-4 text-right">
-                                            <div className="flex items-center justify-end gap-2.5">
-                                                <Link
-                                                    href={`/our-journey/${event._id}/edit`}
-                                                    className="p-1 text-slate-400 hover:text-blue-500 transition-colors"
-                                                    title="Edit"
-                                                >
-                                                    <Pencil size={15} />
-                                                </Link>
-                                                <button
-                                                    onClick={() => handleDelete(event._id, `${event.year} - ${event.title}`)}
-                                                    disabled={deletingId === event._id}
-                                                    className="p-1 text-slate-400 hover:text-rose-500 transition-colors cursor-pointer"
-                                                    title="Delete"
-                                                >
-                                                    {deletingId === event._id ? (
-                                                        <Loader2 size={15} className="animate-spin text-rose-500" />
-                                                    ) : (
-                                                        <Trash2 size={15} />
-                                                    )}
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
+                                {events.map((event, idx) => {
+                                    const eventId = event._id || event.id || `event-${idx}`;
+                                    return (
+                                        <tr key={eventId} className="hover:bg-slate-50/50 transition-colors">
+                                            <td className="px-6 py-4 font-bold text-blue-600">{event.year}</td>
+                                            <td className="px-6 py-4 font-semibold text-slate-900">{event.title}</td>
+                                            <td className="px-6 py-4 text-slate-500 max-w-xs truncate hidden md:table-cell">{event.description}</td>
+                                            <td className="px-6 py-4 text-center font-medium text-slate-700">{event.order}</td>
+                                            <td className="px-6 py-4 text-right">
+                                                <div className="flex items-center justify-end gap-2.5">
+                                                    <Link
+                                                        href={`/our-journey/${eventId}/edit`}
+                                                        className="p-1 text-slate-400 hover:text-blue-500 transition-colors"
+                                                        title="Edit"
+                                                    >
+                                                        <Pencil size={15} />
+                                                    </Link>
+                                                    <button
+                                                        onClick={() => handleDelete(eventId, `${event.year} - ${event.title}`)}
+                                                        disabled={deletingId === eventId}
+                                                        className="p-1 text-slate-400 hover:text-rose-500 transition-colors cursor-pointer"
+                                                        title="Delete"
+                                                    >
+                                                        {deletingId === eventId ? (
+                                                            <Loader2 size={15} className="animate-spin text-rose-500" />
+                                                        ) : (
+                                                            <Trash2 size={15} />
+                                                        )}
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
                             </tbody>
                         </table>
                     </div>

@@ -74,8 +74,13 @@ export async function POST(req: NextRequest) {
         const newDetailsRaw = formData.get('newDetails') as string;
         const newDetails = JSON.parse(newDetailsRaw || '[]') as any[];
 
-        // Folder structure: media/[project.title]/uploads
-        const folderName = `media/${project.title}/uploads`;
+        // Folder structure: media/[project-slug]/uploads
+        // Sanitize title → slug so ImageKit doesn't reject spaces or special chars
+        const safeTitle = project.title
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/(^-|-$)/g, '');
+        const folderName = `media/${safeTitle}/uploads`;
 
         // Find detail blocks matching actual file indices (excluding youtube)
         const fileDetails = newDetails.filter((d: any) => d.provider !== 'youtube');

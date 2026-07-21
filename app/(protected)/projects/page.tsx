@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Plus, Building2, ChevronRight, Loader2, Trash2, Eye, Pencil, ImageIcon, Film, LayoutGrid, MapPin } from 'lucide-react';
-import { listProjects, createProject, deleteProject } from '@/lib/projectApi';
+import { listProjects, createProject, deleteProject, updateProjectBasic } from '@/lib/projectApi';
 import type { ProjectDoc, ProjectStatus } from '@/types/project';
 import { useModal } from '@/context/ModalContext';
 
@@ -52,6 +52,18 @@ export default function ProjectsPage() {
             showAlert('Error', err instanceof Error ? err.message : 'Create failed', 'error');
         } finally {
             setCreating(false);
+        }
+    };
+
+    const handleToggleFeatured = async (e: React.MouseEvent, id: string, currentFeatured?: boolean) => {
+        e.stopPropagation();
+        const nextFeatured = !currentFeatured;
+        try {
+            await updateProjectBasic(id, { featured: nextFeatured });
+            setProjects((prev) => prev.map((p) => p._id === id ? { ...p, featured: nextFeatured } : p));
+            showAlert('Updated', `Project featured status ${nextFeatured ? 'enabled' : 'disabled'}.`, 'success');
+        } catch (err) {
+            showAlert('Error', err instanceof Error ? err.message : 'Update failed', 'error');
         }
     };
 
@@ -313,11 +325,17 @@ export default function ProjectsPage() {
                                             <span className={`w-1.5 h-1.5 rounded-full ${STATUS_DOT[status]}`} />
                                             {status.charAt(0).toUpperCase() + status.slice(1)}
                                         </span>
-                                        {project.featured && (
-                                            <span className="absolute top-3 right-3 bg-amber-500 text-white text-[10px] font-extrabold px-2 py-1 rounded-md shadow-sm border border-amber-400 flex items-center gap-1">
-                                                ★ Featured
-                                            </span>
-                                        )}
+                                        <button
+                                            type="button"
+                                            onClick={(e) => handleToggleFeatured(e, project._id, project.featured)}
+                                            className={`absolute top-3 right-3 text-[10px] font-extrabold px-2 py-1 rounded-md shadow-sm border transition-all flex items-center gap-1 ${
+                                                project.featured 
+                                                    ? 'bg-amber-500 hover:bg-amber-600 text-white border-amber-400' 
+                                                    : 'bg-white/90 hover:bg-white text-slate-500 hover:text-amber-600 border-slate-200 backdrop-blur-sm'
+                                            }`}
+                                        >
+                                            ★ {project.featured ? 'Featured' : 'Not Featured'}
+                                        </button>
                                     </div>
 
                                     {/* Info */}

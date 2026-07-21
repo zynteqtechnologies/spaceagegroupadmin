@@ -14,6 +14,8 @@ interface CSRPost {
     description: string;
     longDescription: string;
     images: string[];
+    mainImage?: string;
+    items?: any[];
     imageCount: number;
     impact: string;
     likes: number;
@@ -113,62 +115,68 @@ export default function CSRListPage() {
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {posts.map((post) => (
-                            <div key={post._id} className="bg-white border border-slate-100 rounded-xl overflow-hidden shadow-sm flex flex-col justify-between group">
-                                <div>
-                                    {/* Cover Preview */}
-                                    <div className="aspect-[16/9] relative bg-slate-100 overflow-hidden border-b border-slate-50">
-                                        {post.images && post.images.length > 0 ? (
-                                            // eslint-disable-next-line @next/next/no-img-element
-                                            <img
-                                                src={post.images[0]}
-                                                alt={post.title}
-                                                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                                            />
-                                        ) : (
-                                            <div className="w-full h-full flex items-center justify-center text-slate-300 font-bold text-xs uppercase">No Images</div>
-                                        )}
-                                        <div className="absolute top-3 left-3 bg-white/95 backdrop-blur-sm shadow-sm rounded-lg px-2.5 py-1 text-[10px] font-black uppercase tracking-wider" style={{ color: post.color || '#c9a84c' }}>
-                                            {post.category}
+                        {posts.map((post) => {
+                            const mainImgUrl = post.mainImage || (post.items && post.items.find((i: any) => i.isMainImage)?.url) || (post.images && post.images[0]);
+                            return (
+                                <div key={post._id} className="bg-white border border-slate-100 rounded-xl overflow-hidden shadow-sm flex flex-col justify-between group">
+                                    <div>
+                                        {/* Cover Preview */}
+                                        <div className="aspect-[16/9] relative bg-slate-100 overflow-hidden border-b border-slate-50">
+                                            {mainImgUrl ? (
+                                                // eslint-disable-next-line @next/next/no-img-element
+                                                <img
+                                                    src={mainImgUrl}
+                                                    alt={post.title}
+                                                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                                                />
+                                            ) : (
+                                                <div className="w-full h-full flex items-center justify-center text-slate-300 font-bold text-xs uppercase">No Images</div>
+                                            )}
+                                            <div className="absolute top-3 left-3 bg-white/95 backdrop-blur-sm shadow-sm rounded-lg px-2.5 py-1 text-[10px] font-black uppercase tracking-wider" style={{ color: post.color || '#c9a84c' }}>
+                                                {post.category}
+                                            </div>
+                                            <div className="absolute top-3 right-3 bg-amber-400 text-white shadow-sm rounded-lg px-2 py-1 text-[10px] font-black tracking-wider flex items-center gap-1">
+                                                ★ Main Image
+                                            </div>
+                                        </div>
+
+                                        {/* Text Details */}
+                                        <div className="p-5 space-y-3">
+                                            <div className="flex items-center justify-between text-[10px] font-bold text-slate-400">
+                                                <span>{post.date}</span>
+                                                <span className="flex items-center gap-1"><Heart size={12} className="fill-rose-500 stroke-none" /> {post.likes} Likes</span>
+                                            </div>
+                                            <h3 className="font-bold text-slate-900 leading-snug text-base group-hover:text-emerald-600 transition-colors">
+                                                {post.title}
+                                            </h3>
+                                            <p className="text-xs text-slate-400 font-medium">Impact: <span className="text-slate-800 font-bold">{post.impact}</span></p>
+                                            <p className="text-xs text-slate-500 leading-relaxed line-clamp-3">{post.description}</p>
                                         </div>
                                     </div>
 
-                                    {/* Text Details */}
-                                    <div className="p-5 space-y-3">
-                                        <div className="flex items-center justify-between text-[10px] font-bold text-slate-400">
-                                            <span>{post.date}</span>
-                                            <span className="flex items-center gap-1"><Heart size={12} className="fill-rose-500 stroke-none" /> {post.likes} Likes</span>
-                                        </div>
-                                        <h3 className="font-bold text-slate-900 leading-snug text-base group-hover:text-emerald-600 transition-colors">
-                                            {post.title}
-                                        </h3>
-                                        <p className="text-xs text-slate-400 font-medium">Impact: <span className="text-slate-800 font-bold">{post.impact}</span></p>
-                                        <p className="text-xs text-slate-500 leading-relaxed line-clamp-3">{post.description}</p>
+                                    {/* Actions */}
+                                    <div className="p-5 pt-0 flex gap-2">
+                                        <Link
+                                            href={`/csr/${post._id}/edit`}
+                                            className="flex-1 inline-flex items-center justify-center gap-1 py-2 bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-bold rounded-lg transition-colors border border-slate-100"
+                                        >
+                                            <Pencil size={12} /> Edit Details
+                                        </Link>
+                                        <button
+                                            onClick={() => handleDelete(post._id, post.title)}
+                                            disabled={deletingId === post._id}
+                                            className="w-10 h-10 flex items-center justify-center bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg transition-colors border border-rose-100 disabled:opacity-50"
+                                        >
+                                            {deletingId === post._id ? (
+                                                <Loader2 size={14} className="animate-spin" />
+                                            ) : (
+                                                <Trash2 size={14} />
+                                            )}
+                                        </button>
                                     </div>
                                 </div>
-
-                                {/* Actions */}
-                                <div className="p-5 pt-0 flex gap-2">
-                                    <Link
-                                        href={`/csr/${post._id}/edit`}
-                                        className="flex-1 inline-flex items-center justify-center gap-1 py-2 bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-bold rounded-lg transition-colors border border-slate-100"
-                                    >
-                                        <Pencil size={12} /> Edit Details
-                                    </Link>
-                                    <button
-                                        onClick={() => handleDelete(post._id, post.title)}
-                                        disabled={deletingId === post._id}
-                                        className="w-10 h-10 flex items-center justify-center bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg transition-colors border border-rose-100 disabled:opacity-50"
-                                    >
-                                        {deletingId === post._id ? (
-                                            <Loader2 size={14} className="animate-spin" />
-                                        ) : (
-                                            <Trash2 size={14} />
-                                        )}
-                                    </button>
-                                </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 )}
             </div>

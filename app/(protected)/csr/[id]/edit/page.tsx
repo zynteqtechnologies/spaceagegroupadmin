@@ -18,6 +18,7 @@ interface Asset {
     description: string;
     category: 'image' | 'video' | 'other';
     provider: 'cloudinary' | 'youtube' | 'none';
+    isMainImage?: boolean;
 }
 
 interface NewItemPreview {
@@ -28,6 +29,7 @@ interface NewItemPreview {
     description: string;
     category: 'image' | 'video' | 'other';
     provider: 'cloudinary' | 'youtube' | 'none';
+    isMainImage?: boolean;
 }
 
 export default function EditCSRPage({ params }: Params) {
@@ -46,6 +48,7 @@ export default function EditCSRPage({ params }: Params) {
         longDescription: '',
         impact: '',
         color: '#c9a84c',
+        likes: '0',
     });
 
     const [existingItems, setExistingItems] = useState<Asset[]>([]);
@@ -68,6 +71,7 @@ export default function EditCSRPage({ params }: Params) {
                     longDescription: data.longDescription || '',
                     impact: data.impact || '',
                     color: data.color || '#c9a84c',
+                    likes: String(data.likes || 0),
                 });
                 if (Array.isArray(data.items)) {
                     setExistingItems(data.items);
@@ -77,11 +81,29 @@ export default function EditCSRPage({ params }: Params) {
             .finally(() => setLoading(false));
     }, [id]);
 
+    const setMainExistingItem = (targetIndex: number) => {
+        setExistingItems(prev => prev.map((item, i) => ({
+            ...item,
+            isMainImage: i === targetIndex,
+        })));
+        setNewItems(prev => prev.map(item => ({ ...item, isMainImage: false })));
+    };
+
+    const setMainNewItem = (targetIndex: number) => {
+        setNewItems(prev => prev.map((item, i) => ({
+            ...item,
+            isMainImage: i === targetIndex,
+        })));
+        setExistingItems(prev => prev.map(item => ({ ...item, isMainImage: false })));
+    };
+
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (!e.target.files) return;
         const files = Array.from(e.target.files);
+        const hasMain = existingItems.some(i => i.isMainImage) || newItems.some(i => i.isMainImage);
         const previews = files.map((file, i) => {
             const isVideo = file.type.startsWith('video/');
+            const isMain = !hasMain && i === 0 && !isVideo;
             return {
                 file,
                 previewUrl: URL.createObjectURL(file),
@@ -89,6 +111,7 @@ export default function EditCSRPage({ params }: Params) {
                 description: '',
                 category: (isVideo ? 'video' : 'image') as any,
                 provider: 'cloudinary' as const,
+                isMainImage: isMain,
             };
         });
         setNewItems(prev => [...prev, ...previews]);
@@ -103,7 +126,8 @@ export default function EditCSRPage({ params }: Params) {
             title: 'YouTube Video',
             description: '',
             category: 'video',
-            provider: 'youtube'
+            provider: 'youtube',
+            isMainImage: false,
         };
         setNewItems(prev => [...prev, newItem]);
         setYoutubeUrl('');
@@ -159,6 +183,7 @@ export default function EditCSRPage({ params }: Params) {
             formData.append('longDescription', longDescription);
             formData.append('impact', impact);
             formData.append('color', form.color);
+            formData.append('likes', form.likes || '0');
 
             const filesToUpload = newItems.filter(p => !!p.file).map(p => p.file!);
             const newDetails = newItems.map(p => ({
@@ -166,6 +191,7 @@ export default function EditCSRPage({ params }: Params) {
                 description: p.description,
                 category: p.category,
                 provider: p.provider,
+                isMainImage: !!p.isMainImage,
                 url: p.provider === 'youtube' ? p.externalUrl : undefined,
             }));
 
@@ -299,6 +325,18 @@ export default function EditCSRPage({ params }: Params) {
                                 className="w-full border border-slate-200 rounded-sm px-4 py-2 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-50 transition-all bg-white text-slate-800 font-bold"
                             />
                         </div>
+
+                        <div className="space-y-1">
+                            <label className="text-xs font-bold text-slate-600 uppercase tracking-wider block">Likes Counter</label>
+                            <input
+                                type="number"
+                                min="0"
+                                value={form.likes}
+                                onChange={e => setForm({ ...form, likes: e.target.value })}
+                                placeholder="0"
+                                className="w-full border border-slate-200 rounded-sm px-4 py-2 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-50 transition-all bg-white text-slate-800 font-bold"
+                            />
+                        </div>
                     </div>
 
                     <div className="bg-slate-900 p-6 rounded-sm shadow-sm text-white space-y-3">
@@ -306,7 +344,7 @@ export default function EditCSRPage({ params }: Params) {
                             <Info size={12} /> Tips
                         </h3>
                         <p className="text-xs text-slate-300 leading-relaxed">
-                            Upload high-quality images and name them appropriately to present details clearly inside the visitor page lightbox modals.
+                            Select 1 image as the <strong>Main Featured Image</strong> to highlight it as the primary card preview on the user website and admin list.
                         </p>
                     </div>
                 </div>
@@ -454,6 +492,20 @@ export default function EditCSRPage({ params }: Params) {
                                                     )}
                                                 </div>
 
+                                                {item.category !== 'video' && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setMainExistingItem(idx)}
+                                                        className={`text-[10px] font-bold px-2 py-1 rounded transition-colors w-full flex items-center justify-center gap-1 ${
+                                                            item.isMainImage 
+                                                                ? 'bg-amber-400 text-white shadow-sm font-black' 
+                                                                : 'bg-white hover:bg-amber-50 text-slate-600 hover:text-amber-600 border border-slate-200'
+                                                        }`}
+                                                    >
+                                                        {item.isMainImage ? '★ Main Featured Image' : '☆ Set as Main Image'}
+                                                    </button>
+                                                )}
+
                                                 <div className="space-y-2 pt-1">
                                                     <div className="space-y-1">
                                                         <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Asset Title</span>
@@ -514,17 +566,19 @@ export default function EditCSRPage({ params }: Params) {
                                                     )}
                                                 </div>
 
-                                                <div className="space-y-2 pt-1">
-                                                    <div className="space-y-1">
-                                                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Asset Title</span>
-                                                        <input 
-                                                            type="text"
-                                                            value={item.title}
-                                                            onChange={e => updateNewItem(idx, { title: e.target.value })}
-                                                            placeholder="Asset title..."
-                                                            className="w-full bg-white border border-slate-200 rounded px-2.5 py-1 text-xs font-bold text-slate-700 outline-none focus:border-indigo-400 transition-colors"
-                                                        />
-                                                    </div>
+                                                {item.category !== 'video' && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setMainNewItem(idx)}
+                                                        className={`text-[10px] font-bold px-2 py-1 rounded transition-colors w-full flex items-center justify-center gap-1 ${
+                                                            item.isMainImage 
+                                                                ? 'bg-amber-400 text-white shadow-sm font-black' 
+                                                                : 'bg-white hover:bg-amber-50 text-slate-600 hover:text-amber-600 border border-slate-200'
+                                                        }`}
+                                                    >
+                                                        {item.isMainImage ? '★ Main Featured Image' : '☆ Set as Main Image'}
+                                                    </button>
+                                                )}
 
                                                     <div className="space-y-1">
                                                         <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Asset Description</span>
@@ -535,7 +589,6 @@ export default function EditCSRPage({ params }: Params) {
                                                             placeholder="Asset description..."
                                                             className="w-full bg-white border border-slate-200 rounded px-2.5 py-1 text-xs font-medium text-slate-500 outline-none focus:border-indigo-400 transition-colors"
                                                         />
-                                                    </div>
                                                 </div>
                                             </div>
                                         </div>

@@ -81,7 +81,10 @@ export async function PATCH(req: NextRequest, { params }: Params) {
 
             // Find project to get title for folder name
             const [project] = await db.select().from(projects).where(eq(projects.id, mediaRecord.project)).limit(1);
-            const folderName = `media/${project ? project.title : 'uploads'}/uploads`;
+            const safeTitle = project
+                ? project.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
+                : 'uploads';
+            const folderName = `media/${safeTitle}/uploads`;
 
             const fileDetails = newDetails.filter((d: any) => d.provider !== 'youtube');
 

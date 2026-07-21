@@ -145,10 +145,10 @@ export default function HeroImagesSection({ project, onUpdate }: Props) {
                         )}
                     </div>
                     <div className="grid grid-cols-3 sm:grid-cols-4 gap-2.5 p-4">
-                        {existing.map((media) => {
+                        {existing.map((media, idx) => {
                             const isDeleted = media._id ? deletions.has(media._id) : false;
                             return (
-                                <div key={media._id}
+                                <div key={media._id || media.url || idx}
                                     className={`group relative rounded-xl overflow-hidden aspect-video transition-all border-2
                     ${isDeleted ? 'opacity-40 border-rose-400' : (existingMainImageId === media._id ? 'border-amber-400 shadow-md shadow-amber-200' : 'border-transparent')}`}
                                 >

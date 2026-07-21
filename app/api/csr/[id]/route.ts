@@ -7,6 +7,8 @@ import { uploadBuffer } from '@/lib/cloudinary';
 import { getCurrentUser, isPrivileged } from '@/lib/authUtils';
 import { createManagerNotification } from '@/lib/notificationUtils';
 
+import { redisDel } from '@/lib/redis';
+
 type Params = { params: Promise<{ id: string }> };
 
 export async function GET(req: NextRequest, { params }: Params) {
@@ -15,7 +17,25 @@ export async function GET(req: NextRequest, { params }: Params) {
         await connectDB();
         const [post] = await db.select().from(csr).where(or(eq(csr.id, id), eq(csr.slug, id))).limit(1);
         if (!post) return NextResponse.json({ error: 'CSR post not found' }, { status: 404 });
-        return NextResponse.json({ ...post, _id: post.id });
+
+        const rawItems = (post.items as any[]) || [];
+        let mainItem = rawItems.find(i => i.isMainImage && i.category !== 'video');
+        if (!mainItem && rawItems.length > 0) {
+            mainItem = rawItems.find(i => i.url && i.category !== 'video') || rawItems[0];
+        }
+
+        const images = rawItems
+            .filter(i => i.url && i.category !== 'video')
+            .sort((a, b) => (b.isMainImage ? 1 : 0) - (a.isMainImage ? 1 : 0))
+            .map(i => i.url);
+
+        return NextResponse.json({
+            ...post,
+            _id: post.id,
+            likes: post.likes || 0,
+            mainImage: mainItem?.url || images[0] || null,
+            images: images.length > 0 ? images : (mainItem?.url ? [mainItem.url] : []),
+        });
     } catch (err: any) {
         return NextResponse.json({ error: err.message }, { status: 500 });
     }
@@ -31,16 +51,18 @@ export async function PATCH(req: NextRequest, { params }: Params) {
         // Support public increments for post likes from user website
         if (contentType.includes('application/json')) {
             const body = await req.json();
-            if (body.action === 'like') {
-                const [post] = await db.select().from(csr).where(eq(csr.id, id)).limit(1);
+            if (body.action === 'like' || body.action === 'unlike') {
+                const [post] = await db.select().from(csr).where(or(eq(csr.id, id), eq(csr.slug, id))).limit(1);
                 if (!post) return NextResponse.json({ error: 'CSR post not found' }, { status: 404 });
                 
-                const newLikes = (post.likes || 0) + 1;
+                const delta = body.action === 'like' ? 1 : -1;
+                const newLikes = Math.max(0, (post.likes || 0) + delta);
                 await db.update(csr).set({
                     likes: newLikes,
                     updatedAt: new Date().toISOString()
-                }).where(eq(csr.id, id));
+                }).where(eq(csr.id, post.id));
 
+                await redisDel('cache:csr');
                 return NextResponse.json({ success: true, likes: newLikes });
             }
         }
@@ -62,6 +84,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
         let longDescription = '';
         let impact = '';
         let color = '#c9a84c';
+        let likesStr = '';
         let items: any[] = [];
 
         if (contentType.includes('multipart/form-data')) {
@@ -74,6 +97,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
             longDescription = formData.get('longDescription') as string || '';
             impact = formData.get('impact') as string || '';
             color = formData.get('color') as string || '#c9a84c';
+            likesStr = formData.get('likes') as string || '';
 
             const existingItemsRaw = formData.get('existingItems') as string;
             const existingItems = JSON.parse(existingItemsRaw || '[]') as any[];
@@ -98,6 +122,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
                         title: detail.title || file.name.replace(/\.[^/.]+$/, ''),
                         description: detail.description || '',
                         category: detail.category || (file.type.startsWith('video/') ? 'video' : 'image'),
+                        isMainImage: !!detail.isMainImage,
                         provider: 'cloudinary',
                     };
                 })
@@ -110,10 +135,23 @@ export async function PATCH(req: NextRequest, { params }: Params) {
                     title: detail.title || 'YouTube Video',
                     description: detail.description || '',
                     category: 'video',
+                    isMainImage: !!detail.isMainImage,
                     provider: 'youtube',
                 }));
 
             items = [...existingItems, ...newUploadedItems, ...youtubeItems];
+
+            // Ensure single isMainImage logic
+            let hasMain = false;
+            items = items.map((item) => {
+                const isMain = !!item.isMainImage && !hasMain && item.category !== 'video';
+                if (isMain) hasMain = true;
+                return { ...item, isMainImage: isMain };
+            });
+            if (!hasMain && items.length > 0) {
+                const firstImgIdx = items.findIndex(i => i.category !== 'video');
+                if (firstImgIdx !== -1) items[firstImgIdx].isMainImage = true;
+            }
         } else {
             const body = await req.json();
             title = body.title || '';
@@ -124,6 +162,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
             longDescription = body.longDescription || '';
             impact = body.impact || '';
             color = body.color || '#c9a84c';
+            if (body.likes !== undefined) likesStr = String(body.likes);
             items = Array.isArray(body.items) ? body.items : [];
         }
 
@@ -136,10 +175,13 @@ export async function PATCH(req: NextRequest, { params }: Params) {
         if (longDescription) updates.longDescription = longDescription.trim();
         if (impact) updates.impact = impact.trim();
         if (color) updates.color = color;
+        if (likesStr !== '') updates.likes = parseInt(likesStr) || 0;
         if (items) updates.items = items;
         updates.updatedAt = new Date().toISOString();
 
         await db.update(csr).set(updates).where(eq(csr.id, id));
+        await redisDel('cache:csr');
+
         const [updatedPost] = await db.select().from(csr).where(eq(csr.id, id)).limit(1);
         const responseObj = { ...updatedPost, _id: updatedPost.id };
 
@@ -171,6 +213,7 @@ export async function DELETE(req: NextRequest, { params }: Params) {
 
         const label = post.title;
         await db.delete(csr).where(eq(csr.id, id));
+        await redisDel('cache:csr');
 
         // Notification
         await createManagerNotification(

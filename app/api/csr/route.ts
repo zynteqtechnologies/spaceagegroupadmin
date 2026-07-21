@@ -17,7 +17,26 @@ export async function GET() {
 
         await connectDB();
         const posts = await db.select().from(csr).orderBy(desc(csr.createdAt));
-        const mappedPosts = posts.map(p => ({ ...p, _id: p.id }));
+        const mappedPosts = posts.map(p => {
+            const rawItems = (p.items as any[]) || [];
+            let mainItem = rawItems.find(i => i.isMainImage && i.category !== 'video');
+            if (!mainItem && rawItems.length > 0) {
+                mainItem = rawItems.find(i => i.url && i.category !== 'video') || rawItems[0];
+            }
+
+            const images = rawItems
+                .filter(i => i.url && i.category !== 'video')
+                .sort((a, b) => (b.isMainImage ? 1 : 0) - (a.isMainImage ? 1 : 0))
+                .map(i => i.url);
+
+            return {
+                ...p,
+                _id: p.id,
+                likes: p.likes || 0,
+                mainImage: mainItem?.url || images[0] || null,
+                images: images.length > 0 ? images : (mainItem?.url ? [mainItem.url] : []),
+            };
+        });
 
         await redisSet(cacheKey, mappedPosts, 120);
         return NextResponse.json(mappedPosts, { headers: { 'X-Cache': 'MISS' } });
@@ -80,6 +99,7 @@ export async function POST(req: NextRequest) {
                         title: detail.title || file.name.replace(/\.[^/.]+$/, ''),
                         description: detail.description || '',
                         category: detail.category || (file.type.startsWith('video/') ? 'video' : 'image'),
+                        isMainImage: !!detail.isMainImage,
                         provider: 'cloudinary',
                     };
                 })
@@ -92,10 +112,23 @@ export async function POST(req: NextRequest) {
                     title: detail.title || 'YouTube Video',
                     description: detail.description || '',
                     category: 'video',
+                    isMainImage: !!detail.isMainImage,
                     provider: 'youtube',
                 }));
 
             items = [...existingItems, ...newUploadedItems, ...youtubeItems];
+
+            // Ensure only 1 item is marked as isMainImage
+            let hasMain = false;
+            items = items.map((item) => {
+                const isMain = !!item.isMainImage && !hasMain && item.category !== 'video';
+                if (isMain) hasMain = true;
+                return { ...item, isMainImage: isMain };
+            });
+            if (!hasMain && items.length > 0) {
+                const firstImgIdx = items.findIndex(i => i.category !== 'video');
+                if (firstImgIdx !== -1) items[firstImgIdx].isMainImage = true;
+            }
         } else {
             const body = await req.json();
             title = body.title || '';
@@ -139,6 +172,8 @@ export async function POST(req: NextRequest) {
             createdAt: now,
             updatedAt: now
         });
+
+        await redisDel('cache:csr');
 
         const [post] = await db.select().from(csr).where(eq(csr.id, id)).limit(1);
         const responseObj = { ...post, _id: post.id };
