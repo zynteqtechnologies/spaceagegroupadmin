@@ -26,9 +26,22 @@ export default function ProjectBasicSection({ project, onUpdate }: Props) {
     const { showAlert } = useModal();
 
     const handleSave = async () => {
+        const trimmedTitle = form.title.trim();
+        if (!trimmedTitle) {
+            showAlert('Validation Error', 'Project title is required.', 'error');
+            return;
+        }
+        if (trimmedTitle.length < 3) {
+            showAlert('Validation Error', 'Project title must be at least 3 characters long.', 'error');
+            return;
+        }
+        if (form.units < 0) {
+            showAlert('Validation Error', 'Total units cannot be negative.', 'error');
+            return;
+        }
         setSaving(true);
         try {
-            const updated = await updateProjectBasic(project._id, form);
+            const updated = await updateProjectBasic(project._id, { ...form, title: trimmedTitle });
             onUpdate(updated);
             setSaved(true);
             showAlert('Saved', 'Basic project information saved successfully.', 'success');

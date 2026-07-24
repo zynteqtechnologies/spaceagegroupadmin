@@ -48,12 +48,18 @@ export async function PUT(req: NextRequest, { params }: Params) {
         const items = (body.items ?? []) as SpecificationItem[];
         const field = getSpecField(type);
 
-        // Re-index order
-        const ordered = items.map((item, i) => ({
-            label: item.label?.trim() ?? '',
-            value: item.value?.trim() ?? '',
-            order: item.order ?? i,
-        })).filter(item => item.label && item.value);
+        // Re-index order & support both label/category and value/detail
+        const ordered = items.map((item, i) => {
+            const label = (item.label || item.category || '').trim();
+            const value = (item.value || item.detail || '').trim();
+            return {
+                label,
+                value,
+                category: label,
+                detail: value,
+                order: item.order ?? i,
+            };
+        }).filter(item => item.label && item.value);
 
         await db.update(projects).set({
             [field]: ordered,

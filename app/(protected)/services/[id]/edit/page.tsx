@@ -99,8 +99,18 @@ export default function EditServicePage({ params }: { params: Promise<{ id: stri
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!formData.title || !formData.number || !formData.category || !formData.tagline || !formData.description) {
+        const trimmedTitle = formData.title.trim();
+        const trimmedTagline = formData.tagline.trim();
+        const trimmedDesc = formData.description.trim();
+        const trimmedNum = formData.number.trim();
+
+        if (!trimmedTitle || !trimmedNum || !formData.category || !trimmedTagline || !trimmedDesc) {
             setError('Please fill in all required basic fields.');
+            return;
+        }
+
+        if (trimmedTitle.length < 3) {
+            setError('Service title must be at least 3 characters long.');
             return;
         }
 

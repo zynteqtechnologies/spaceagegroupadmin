@@ -89,9 +89,10 @@ export async function POST(req: NextRequest, { params }: Params) {
                 id: commentId,
                 postId: postIdStr,
                 parentId: parentId || null,
-                authorName,
-                authorEmail,
-                content,
+                authorName: authorName?.trim() || 'Anonymous',
+                authorEmail: authorEmail?.trim() || '',
+                content: content?.trim() || '',
+                isApproved: true,
                 createdAt: now,
                 updatedAt: now
             });
@@ -103,7 +104,7 @@ export async function POST(req: NextRequest, { params }: Params) {
             await db.insert(notifications).values({
                 id: crypto.randomUUID(),
                 userId: 'system',
-                managerName: authorName,
+                managerName: authorName || 'Visitor',
                 action: action === 'reply' ? 'replied to comment' : 'commented on post',
                 target: post.title,
                 isRead: false,
@@ -115,6 +116,47 @@ export async function POST(req: NextRequest, { params }: Params) {
         }
 
         return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
+    } catch (err: any) {
+        return NextResponse.json({ error: err.message }, { status: 500 });
+    }
+}
+
+// ── PATCH /api/blog/:id/engagement — Approve/Unapprove Comment ────────────────
+export async function PATCH(req: NextRequest) {
+    try {
+        const body = await req.json();
+        const { commentId, isApproved } = body;
+
+        if (!commentId) {
+            return NextResponse.json({ error: 'commentId is required' }, { status: 400 });
+        }
+
+        await connectDB();
+        await db.update(comments)
+            .set({ isApproved: Boolean(isApproved), updatedAt: new Date().toISOString() })
+            .where(eq(comments.id, commentId));
+
+        return NextResponse.json({ message: 'Comment status updated successfully', isApproved: Boolean(isApproved) });
+    } catch (err: any) {
+        return NextResponse.json({ error: err.message }, { status: 500 });
+    }
+}
+
+// ── DELETE /api/blog/:id/engagement — Delete Comment ─────────────────────────
+export async function DELETE(req: NextRequest) {
+    try {
+        const body = await req.json();
+        const { commentId } = body;
+
+        if (!commentId) {
+            return NextResponse.json({ error: 'commentId is required' }, { status: 400 });
+        }
+
+        await connectDB();
+        // Delete child replies if any, then the comment itself
+        await db.delete(comments).where(or(eq(comments.id, commentId), eq(comments.parentId, commentId)));
+
+        return NextResponse.json({ message: 'Comment deleted successfully' });
     } catch (err: any) {
         return NextResponse.json({ error: err.message }, { status: 500 });
     }

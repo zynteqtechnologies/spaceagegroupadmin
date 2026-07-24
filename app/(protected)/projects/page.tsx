@@ -40,10 +40,22 @@ export default function ProjectsPage() {
 
     const handleCreate = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!form.title.trim()) return;
+        const trimmedTitle = form.title.trim();
+        if (!trimmedTitle) {
+            showAlert('Validation Error', 'Project title is required.', 'error');
+            return;
+        }
+        if (trimmedTitle.length < 3) {
+            showAlert('Validation Error', 'Project title must be at least 3 characters long.', 'error');
+            return;
+        }
+        if (form.units < 0) {
+            showAlert('Validation Error', 'Total units cannot be negative.', 'error');
+            return;
+        }
         setCreating(true);
         try {
-            const project = await createProject(form);
+            const project = await createProject({ ...form, title: trimmedTitle });
             setProjects((prev) => [project, ...prev]);
             setTab('all');
             setForm({ title: '', headline: '', status: 'upcoming', shortIntro: '', address: '', estYear: '', featured: false, category: '', area: '', units: 0 });

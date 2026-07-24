@@ -125,7 +125,7 @@ export default function OurTeamPage() {
                                 <div className="relative aspect-[4/3] bg-gradient-to-br from-slate-100 to-slate-200 overflow-hidden">
                                     {/* eslint-disable-next-line @next/next/no-img-element */}
                                     <img
-                                        src={member.image?.url ? (member.image.url.startsWith('/') ? `https://spaceage-userside.vercel.app${member.image.url}` : member.image.url) : '/placeholder-user.png'}
+                                        src={member.image?.url ? (member.image.url.startsWith('/') ? `${process.env.NEXT_PUBLIC_USERSIDE_URL || 'https://spaceage-userside.vercel.app'}${member.image.url}` : member.image.url) : '/placeholder-user.png'}
                                         alt={member.name}
                                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                                     />

@@ -41,8 +41,14 @@ export default function NewTeamMemberPage() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!formData.name || !formData.position || !imageFile) {
+        const trimmedName = formData.name.trim();
+        const trimmedPosition = formData.position.trim();
+        if (!trimmedName || !trimmedPosition || !imageFile) {
             setError('Name, Position, and Profile Image are required.');
+            return;
+        }
+        if (trimmedName.length < 2) {
+            setError('Member name must be at least 2 characters long.');
             return;
         }
 

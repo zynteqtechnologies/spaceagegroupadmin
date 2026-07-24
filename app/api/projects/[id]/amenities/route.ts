@@ -31,12 +31,16 @@ export async function PUT(req: NextRequest, { params }: Params) {
         const body = await req.json();
         const items = (body.items ?? []) as AmenityItem[];
 
-        const ordered = items.map((item, i) => ({
-            name: item.name?.trim() ?? '',
-            icon: item.icon ?? '',
-            category: item.category ?? '',
-            order: item.order ?? i,
-        })).filter(item => item.name);
+        const ordered = items.map((item, i) => {
+            const name = (item.name || (item as any).title || '').trim();
+            return {
+                name,
+                title: name,
+                icon: item.icon ?? '',
+                category: item.category ?? '',
+                order: item.order ?? i,
+            };
+        }).filter(item => item.name);
 
         await db.update(projects).set({
             amenities: ordered,

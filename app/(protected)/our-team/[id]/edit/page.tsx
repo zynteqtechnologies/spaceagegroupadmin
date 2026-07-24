@@ -66,8 +66,14 @@ export default function EditTeamMemberPage({ params }: { params: Promise<{ id: s
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!formData.name || !formData.position) {
+        const trimmedName = formData.name.trim();
+        const trimmedPosition = formData.position.trim();
+        if (!trimmedName || !trimmedPosition) {
             setError('Name and Position are required.');
+            return;
+        }
+        if (trimmedName.length < 2) {
+            setError('Member name must be at least 2 characters long.');
             return;
         }
 
